@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}File Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-file-alt"></i> File Details
+                </h3>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <tbody>
+                                    <tr>
+                                        <th style="width: 200px;">Filename</th>
+                                        <td>
+                                            <i class="fas fa-file me-2"></i>
+                                            {{ file.original_filename }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Upload Date</th>
+                                        <td>
+                                            <i class="fas fa-calendar me-2"></i>
+                                            {{ file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Status</th>
+                                        <td>
+                                            <span class="badge bg-{{ file.get_status_badge() }}">
+                                                {{ file.status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>File ID</th>
+                                        <td>
+                                            <i class="fas fa-hashtag me-2"></i>
+                                            {{ file.id }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Owner</th>
+                                        <td>
+                                            <i class="fas fa-user me-2"></i>
+                                            {{ current_user.username }}
+                                        </td>
+                                    </tr>
+                                    {% if file_hash %}
+                                    <tr>
+                                        <th>SHA256 Hash</th>
+                                        <td>
+                                            <i class="fas fa-fingerprint me-2"></i>
+                                            <code class="user-select-all">{{ file_hash }}</code>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    <tr>
+                                        <th>Download Statistics</th>
+                                        <td>
+                                            <div class="d-flex gap-4">
+                                                <div>
+                                                    <i class="fas fa-file me-2"></i>
+                                                    File: {{ file.file_downloads }}
+                                                </div>
+                                                <div>
+                                                    <i class="fas fa-clock me-2"></i>
+                                                    Timestamp: {{ file.timestamp_downloads }}
+                                                </div>
+                                                <div>
+                                                    <i class="fas fa-signature me-2"></i>
+                                                    Signature: {{ file.signature_downloads }}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">Actions</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <a href="{{ url_for('main.download_file', file_id=file.id) }}" 
+                                       class="btn btn-success">
+                                        <i class="fas fa-download"></i> Download File
+                                    </a>
+                                    <a href="{{ url_for('main.download_timestamp', file_id=file.id) }}" 
+                                       class="btn btn-warning">
+                                        <i class="fas fa-clock"></i> Download Timestamp
+                                    </a>
+                                    <a href="{{ url_for('main.download_signature', file_id=file.id) }}" 
+                                       class="btn btn-primary">
+                                        <i class="fas fa-signature"></i> Download Signature
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

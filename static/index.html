@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureStamp - Bitcoin File Timestamping</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">SecureStamp</a>
+            <div class="navbar-nav" id="navbarNav">
+                <div class="d-flex" id="auth-buttons">
+                    <button class="btn btn-outline-light me-2" id="loginBtn">Login</button>
+                    <button class="btn btn-primary" id="registerBtn">Register</button>
+                </div>
+                <div class="d-none" id="user-nav">
+                    <span class="navbar-text me-3" id="username"></span>
+                    <button class="btn btn-outline-light" id="logoutBtn">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <!-- Auth Forms -->
+        <div id="auth-forms" class="row justify-content-center">
+            <div class="col-md-6">
+                <div id="loginForm" class="card mb-4 d-none">
+                    <div class="card-body">
+                        <h3>Login</h3>
+                        <form id="login-form">
+                            <div class="mb-3">
+                                <label class="form-label">Username</label>
+                                <input type="text" class="form-control" name="username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <input type="password" class="form-control" name="password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Login</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="registerForm" class="card mb-4 d-none">
+                    <div class="card-body">
+                        <h3>Register</h3>
+                        <form id="register-form">
+                            <div class="mb-3">
+                                <label class="form-label">Username</label>
+                                <input type="text" class="form-control" name="username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <input type="password" class="form-control" name="password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content" class="d-none">
+            <!-- File Upload -->
+            <div class="row mb-4">
+                <div class="col-md-6 mx-auto">
+                    <div class="card">
+                        <div class="card-body">
+                            <h3>Upload Files for Timestamping</h3>
+                            <form id="upload-form">
+                                <div class="mb-3">
+                                    <label class="form-label">Select Files</label>
+                                    <input type="file" class="form-control" id="files" multiple required>
+                                    <div class="form-text">You can select multiple files to upload at once</div>
+                                </div>
+                                <div id="upload-progress" class="progress mb-3 d-none">
+                                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <div id="upload-status" class="mb-3"></div>
+                                <button type="submit" class="btn btn-primary">Upload & Timestamp</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- File List -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h3>Your Timestamped Files</h3>
+                            <div id="file-list">
+                                <script id="file-template" type="x-tmpl-mustache">
+                                    {{#files}}
+                                    <div class="file-item border-bottom py-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h5 class="mb-1">{{filename}}</h5>
+                                                <p class="mb-1">Status: {{status}}</p>
+                                                <small>Uploaded: {{uploaded_at}} | Size: {{size_formatted}}</small>
+                                            </div>
+                                            <div class="btn-group">
+                                                <button class="btn btn-sm btn-info verify-btn" data-id="{{id}}">
+                                                    Verify
+                                                </button>
+                                                <button class="btn btn-sm btn-success download-btn" data-id="{{id}}" data-filename="{{filename}}">
+                                                    <i class="bi bi-download"></i> Download
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {{/files}}
+                                    {{^files}}
+                                    <p>No files uploaded yet.</p>
+                                    {{/files}}
+                                </script>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/4.1.0/mustache.min.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html> 

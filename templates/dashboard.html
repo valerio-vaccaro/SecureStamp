@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h2 class="card-title">
+                    <i class="fas fa-user"></i> Welcome, {{ current_user.username }}!
+                </h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-file-alt"></i> Your Files
+                </h3>
+                <a href="{{ url_for('main.upload') }}" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload New Files
+                </a>
+            </div>
+            <div class="card-body">
+                {% if files %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Filename</th>
+                                    <th>Upload Date</th>
+                                    <th>Status</th>
+                                    <th>Downloads</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for file in files %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-file"></i>
+                                        {{ file.original_filename }}
+                                    </td>
+                                    <td>{{ file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ file.get_status_badge() }}">
+                                            {{ file.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            <i class="fas fa-file me-1"></i> {{ file.file_downloads }}
+                                            <i class="fas fa-clock ms-2 me-1"></i> {{ file.timestamp_downloads }}
+                                            <i class="fas fa-signature ms-2 me-1"></i> {{ file.signature_downloads }}
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('main.download_file', file_id=file.id) }}" 
+                                               class="btn btn-sm btn-success">
+                                                <i class="fas fa-download"></i> File
+                                            </a>
+                                            <a href="{{ url_for('main.download_timestamp', file_id=file.id) }}" 
+                                               class="btn btn-sm btn-warning">
+                                                <i class="fas fa-clock"></i> Timestamp
+                                            </a>
+                                            <a href="{{ url_for('main.download_signature', file_id=file.id) }}" 
+                                               class="btn btn-sm btn-primary">
+                                                <i class="fas fa-signature"></i> Signature
+                                            </a>
+                                            <a href="{{ url_for('main.file_detail', file_id=file.id) }}" 
+                                               class="btn btn-sm btn-info">
+                                                <i class="fas fa-info-circle"></i> Details
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-upload fa-3x text-muted mb-3"></i>
+                        <p class="lead text-muted">No files uploaded yet.</p>
+                        <a href="{{ url_for('main.upload') }}" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Upload Your First File
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
