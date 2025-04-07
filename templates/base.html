@@ -18,13 +18,19 @@
             padding: 10px;
             background-color: rgba(0, 0, 0, 0.8);
             color: white;
-            font-size: 0.8em;
+            font-size: 0.9em;
             border-radius: 5px 0 0 0;
             z-index: 1000;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .security-info:hover {
+            background-color: rgba(0, 0, 0, 0.9);
         }
         .security-info code {
             color: #000000;
             margin-left: 5px;
+            font-family: monospace;
         }
     </style>
 </head>
@@ -86,14 +92,42 @@
     </div>
 
     <!-- Security Information Footer -->
-    <div class="security-info">
-        <div>GPG Key: <code>{{ config.GPG_USER }}</code></div>
-        <div>Onion: <code>{{ config.ONION_URL }}</code></div>
+    <div class="security-info" onclick="toggleSecurityInfo(this)">
+        <div>GPG Key: <code id="gpgKey">{{ config.GPG_USER }}</code></div>
+        <div>Onion: <code id="onionUrl">{{ config.ONION_URL }}</code></div>
     </div>
 
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <script>
+    function toggleSecurityInfo(element) {
+        const gpgKey = document.getElementById('gpgKey');
+        const onionUrl = document.getElementById('onionUrl');
+        
+        if (gpgKey.dataset.hidden === 'true') {
+            // Show the values
+            gpgKey.textContent = '{{ config.GPG_USER }}';
+            onionUrl.textContent = '{{ config.ONION_URL }}';
+            gpgKey.dataset.hidden = 'false';
+        } else {
+            // Hide the values
+            gpgKey.textContent = '••••••••';
+            onionUrl.textContent = '••••••••';
+            gpgKey.dataset.hidden = 'true';
+        }
+    }
+
+    // Hide values initially
+    document.addEventListener('DOMContentLoaded', function() {
+        const gpgKey = document.getElementById('gpgKey');
+        const onionUrl = document.getElementById('onionUrl');
+        gpgKey.textContent = '••••••••';
+        onionUrl.textContent = '••••••••';
+        gpgKey.dataset.hidden = 'true';
+    });
+    </script>
 </body>
 </html> 
