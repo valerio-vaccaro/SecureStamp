@@ -37,6 +37,9 @@ FLASK_ENV=development
 DATABASE_URL=mysql://username:password@localhost/securestamp
 SECRET_KEY=your-secret-key
 UPLOAD_FOLDER=uploads
+GPG_USER=gpg-user
+ONION_URL=your-onion-address.onion
+
 ```
 
 4. Initialize database:
