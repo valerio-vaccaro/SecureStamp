@@ -3,30 +3,82 @@
 {% block title %}Upload Files{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h4 class="card-title mb-0">
-                    <i class="fas fa-upload"></i> Upload Files
-                </h4>
-            </div>
-            <div class="card-body">
-                <form method="POST" enctype="multipart/form-data" id="uploadForm">
-                    <div class="mb-3">
-                        <label for="files" class="form-label">Select Files</label>
-                        <input type="file" class="form-control" id="files" name="files" multiple required>
-                        <div class="form-text">
-                            Allowed file types: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG, GIF
-                        </div>
+<div class="container mt-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="fas fa-upload"></i> Upload Files
+            </h4>
+        </div>
+        <div class="card-body">
+            <form id="uploadForm" method="post" enctype="multipart/form-data">
+                <div class="form-group mb-3">
+                    <label for="files" class="form-label">Choose files</label>
+                    <input type="file" class="form-control" id="files" name="files" multiple>
+                    <div class="form-text">
+                        Allowed file types: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG, GIF
                     </div>
-                    <div id="upload-preview" class="mb-3"></div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-upload"></i> Upload Files
-                    </button>
-                </form>
-            </div>
+                </div>
+                
+                <div id="uploadProgress" class="mb-3" style="display: none;">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: 0%" 
+                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+                </div>
+                
+                <div id="uploadStatus" class="mb-3"></div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload Files
+                </button>
+            </form>
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const progressBar = document.querySelector('.progress-bar');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const uploadStatus = document.getElementById('uploadStatus');
+    
+    uploadProgress.style.display = 'block';
+    uploadStatus.innerHTML = '';
+    
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            progressBar.style.width = percentComplete + '%';
+            progressBar.textContent = Math.round(percentComplete) + '%';
+            progressBar.setAttribute('aria-valuenow', percentComplete);
+        }
+    });
+    
+    xhr.addEventListener('load', function() {
+        if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            uploadStatus.innerHTML = '<div class="alert alert-success">Files uploaded successfully!</div>';
+            setTimeout(() => {
+                window.location.href = '{{ url_for("main.dashboard") }}';
+            }, 1000);
+        } else {
+            uploadStatus.innerHTML = '<div class="alert alert-danger">Upload failed. Please try again.</div>';
+        }
+    });
+    
+    xhr.addEventListener('error', function() {
+        uploadStatus.innerHTML = '<div class="alert alert-danger">Upload failed. Please try again.</div>';
+    });
+    
+    xhr.open('POST', '{{ url_for("main.upload") }}', true);
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.send(formData);
+});
+</script>
 {% endblock %} 

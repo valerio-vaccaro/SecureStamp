@@ -75,14 +75,13 @@ def allowed_file(filename):
 def upload():
     if request.method == 'POST':
         if 'files' not in request.files:
-            flash('No file part', 'error')
-            return redirect(request.url)
+            return {'error': 'No file part'}, 400
 
         files = request.files.getlist('files')
+        uploaded_files = []
 
         for file in files:
             if file.filename == '':
-                flash('No selected file', 'error')
                 continue
 
             if file and allowed_file(file.filename):
@@ -104,11 +103,16 @@ def upload():
                     original_filename=filename,
                     user_id=current_user.id,
                     file_path=file_path,
-                    status='Timestamp requested'  # Set initial status
+                    status='Timestamp requested'
                 )
                 db.session.add(new_file)
+                uploaded_files.append({'name': filename, 'status': 'success'})
         
         db.session.commit()
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return {'files': uploaded_files}
+        
         flash('Files uploaded successfully', 'success')
         return redirect(url_for('main.dashboard'))
 
