@@ -64,7 +64,7 @@ def logout():
 @login_required
 def dashboard():
     files = File.query.filter_by(user_id=current_user.id).order_by(File.uploaded_at.desc()).all()
-    return render_template('dashboard.html', files=files)
+    return render_template('dashboard.html', files=files, config=current_app.config)
 
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'zip', 'gz', 'bz2'}

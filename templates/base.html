@@ -10,6 +10,23 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .security-info {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            font-size: 0.8em;
+            border-radius: 5px 0 0 0;
+            z-index: 1000;
+        }
+        .security-info code {
+            color: #000000;
+            margin-left: 5px;
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -66,6 +83,12 @@
         {% endwith %}
 
         {% block content %}{% endblock %}
+    </div>
+
+    <!-- Security Information Footer -->
+    <div class="security-info">
+        <div>GPG Key: <code>{{ config.GPG_USER }}</code></div>
+        <div>Onion: <code>{{ config.ONION_URL }}</code></div>
     </div>
 
     <!-- Bootstrap JS Bundle with Popper -->
