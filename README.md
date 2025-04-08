@@ -2,20 +2,20 @@
 A Flask-based file management system that allows users to securely upload and track files with timestamps.
 
 ## Features
-- User authentication (login/register)
-- Multiple file uploads
-- File timestamp tracking
-- User-specific file management
-- Secure file storage
+- 🔐 User authentication (login/register)
+- 📁 Multiple file uploads
+- ⏱️ File timestamp tracking
+- 👤 User-specific file management
+- 🔒 Secure file storage
 
 ## Technical Stack
-- **Flask**: Web framework
-- **MySQL**: Database
-- **Flask-SQLAlchemy**: SQL ORM
-- **Flask-Migrate**: Database migrations
-- **Flask-Login**: User authentication
-- **Python-dotenv**: Environment management
-- **Werkzeug**: Secure file handling
+- 🐍 **Flask**: Web framework
+- 🗄️ **MySQL**: Database
+- 🔄 **Flask-SQLAlchemy**: SQL ORM
+- 📦 **Flask-Migrate**: Database migrations
+- 🔑 **Flask-Login**: User authentication
+- ⚙️ **Python-dotenv**: Environment management
+- 🛡️ **Werkzeug**: Secure file handling
 
 ## Project Setup
 
@@ -69,7 +69,7 @@ SecureStamp/
 └── requirements.txt
 ```
 
-## Database Schema
+## Data Model
 
 ### Users Table
 ```sql
@@ -78,7 +78,8 @@ CREATE TABLE users (
     username VARCHAR(80) UNIQUE NOT NULL,
     email VARCHAR(120) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    locked BOOLEAN DEFAULT TRUE NOT NULL
 );
 ```
 
@@ -91,33 +92,64 @@ CREATE TABLE files (
     user_id INT NOT NULL,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     file_path VARCHAR(255) NOT NULL,
+    status VARCHAR(50) DEFAULT 'Timestamp requested' NOT NULL,
+    file_downloads INT DEFAULT 0,
+    timestamp_downloads INT DEFAULT 0,
+    signature_downloads INT DEFAULT 0,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 ```
 
+### Model Relationships
+- 👥 One User can have many Files (one-to-many relationship)
+- 📄 Each File belongs to exactly one User
+
+### File Status
+Possible file statuses:
+- ⏳ `Timestamp requested`: Initial state after upload
+- ✅ `Timestamp completed`: Timestamp has been generated
+- ❌ `Error`: Error occurred during processing
+
 ## API Endpoints
 
 ### Authentication
-- `POST /auth/register`: Register new user
-- `POST /auth/login`: User login
-- `GET /auth/logout`: User logout
+- 🔐 `GET /register`: Display registration form
+- 📝 `POST /register`: Register new user
+  - Required fields: username, email, password
+  - Returns: Redirect to login page or error message
+- 🔑 `GET /login`: Display login form
+- 📋 `POST /login`: User login
+  - Required fields: username, password
+  - Returns: Redirect to dashboard or error message
+- 🚪 `GET /logout`: User logout
+  - Returns: Redirect to login page
 
 ### File Management
-- `GET /dashboard`: View uploaded files
-- `POST /upload`: Upload new file(s)
-- `GET /files`: List user's files
-- `GET /files/<int:file_id>`: View file details
+- 📊 `GET /` or `GET /dashboard`: View user's dashboard
+  - Returns: List of user's files
+- 📤 `GET /upload`: Display file upload form
+- ⬆️ `POST /upload`: Upload new file(s)
+  - Required: files (multipart/form-data)
+  - Returns: Success message or error
+- 📂 `GET /files`: List user's files
+  - Returns: All files belonging to the current user
+- 🔍 `GET /files/<int:file_id>`: View file details
+  - Returns: File information including SHA-256 hash
+- ⬇️ `GET /download/<int:file_id>`: Download original file
+  - Returns: File download
+- ⏱️ `GET /download/timestamp/<int:file_id>`: Download timestamp file
+  - Returns: .ots file download
+- ✍️ `GET /download/signature/<int:file_id>`: Download signature file
+  - Returns: .sig file download
 
-## Security Features
-- Password hashing using Werkzeug
-- Secure file upload handling
-- User session management
-- CSRF protection
-- File extension validation
-- User-specific file access control
+### Security
+- 🔒 All file management endpoints require authentication
+- 🚫 File access is restricted to the owner
+- 📊 File downloads are tracked with counters
+- ✅ File extensions are validated
+- 🔄 Files are stored with unique names
 
 ## Running the Application
 ```bash
 flask run
 ```
-The application will be available at `http://localhost:5000`
