@@ -45,4 +45,13 @@ class File(db.Model):
             'Timestamp completed': 'success',
             'Error': 'danger'
         }
-        return status_classes.get(self.status, 'secondary') 
+        return status_classes.get(self.status, 'secondary')
+
+class Symbol(db.Model):
+    __tablename__ = 'symbols'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow) 

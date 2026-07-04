@@ -1,0 +1,414 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SecureStamp API",
+    "description": "SecureStamp lets users upload files, sign them with GPG and timestamp them with OpenTimestamps. Most endpoints require a session cookie obtained by logging in via `/login`.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    { "name": "Authentication", "description": "Register, login and logout" },
+    { "name": "Pages", "description": "HTML pages rendered by the server" },
+    { "name": "Files", "description": "Upload files and view file details" },
+    { "name": "Downloads", "description": "Download files, timestamps and signatures" },
+    { "name": "Symbols", "description": "Symbol registration API" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session",
+        "description": "Flask-Login session cookie set after a successful POST to /login"
+      }
+    },
+    "schemas": {
+      "UploadedFile": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "example": "document.pdf" },
+          "status": { "type": "string", "example": "success" }
+        }
+      },
+      "Symbol": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "name": { "type": "string", "example": "MY-SYMBOL" },
+          "description": { "type": "string", "example": "A test symbol" },
+          "created_at": { "type": "string", "example": "2026-07-04 12:00" },
+          "user_id": { "type": "integer", "example": 1 }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string", "example": "No data provided" }
+        }
+      }
+    },
+    "responses": {
+      "RedirectToLogin": {
+        "description": "Redirect to the login page when not authenticated"
+      }
+    }
+  },
+  "paths": {
+    "/register": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Registration page",
+        "responses": {
+          "200": { "description": "HTML registration form" }
+        }
+      },
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register a new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "email", "password"],
+                "properties": {
+                  "username": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "format": "password" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": { "description": "Redirect to /login on success, or back to /register if the username already exists. Note: new accounts are created locked and must be unlocked by an administrator." }
+        }
+      }
+    },
+    "/login": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Login page",
+        "responses": {
+          "200": { "description": "HTML login form" }
+        }
+      },
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Log in",
+        "description": "On success sets the `session` cookie used by all authenticated endpoints. Locked accounts are rejected.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": { "type": "string" },
+                  "password": { "type": "string", "format": "password" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": { "description": "Redirect to /dashboard on success" },
+          "200": { "description": "Login page re-rendered with an error message on failure" }
+        }
+      }
+    },
+    "/logout": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Log out",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "302": { "description": "Session cleared, redirect to /login" }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": ["Pages"],
+        "summary": "Dashboard (alias of /dashboard)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "HTML dashboard listing the current user's files" },
+          "302": { "$ref": "#/components/responses/RedirectToLogin" }
+        }
+      }
+    },
+    "/dashboard": {
+      "get": {
+        "tags": ["Pages"],
+        "summary": "Dashboard",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "HTML dashboard listing the current user's files, newest first" },
+          "302": { "$ref": "#/components/responses/RedirectToLogin" }
+        }
+      }
+    },
+    "/upload": {
+      "get": {
+        "tags": ["Files"],
+        "summary": "Upload page",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "HTML upload form" },
+          "302": { "$ref": "#/components/responses/RedirectToLogin" }
+        }
+      },
+      "post": {
+        "tags": ["Files"],
+        "summary": "Upload one or more files",
+        "description": "Each uploaded file is GPG-signed and timestamped with OpenTimestamps. Allowed extensions: txt, pdf, png, jpg, jpeg, gif, doc, docx, zip, gz, bz2. Send the `X-Requested-With: XMLHttpRequest` header to receive a JSON response instead of a redirect.",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "X-Requested-With",
+            "in": "header",
+            "required": false,
+            "schema": { "type": "string", "enum": ["XMLHttpRequest"] },
+            "description": "When set to XMLHttpRequest the response is JSON instead of a redirect"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["files"],
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": { "type": "string", "format": "binary" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON list of uploaded files (only with X-Requested-With: XMLHttpRequest)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "files": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/UploadedFile" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "302": { "description": "Redirect to /dashboard (non-AJAX requests)" },
+          "400": {
+            "description": "No file part in the request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/files": {
+      "get": {
+        "tags": ["Files"],
+        "summary": "List the current user's files",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "HTML page listing the user's files" },
+          "302": { "$ref": "#/components/responses/RedirectToLogin" }
+        }
+      }
+    },
+    "/files/{file_id}": {
+      "get": {
+        "tags": ["Files"],
+        "summary": "File detail page",
+        "description": "Shows file metadata and its SHA-256 hash. Only the file owner can access it.",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "HTML file detail page" },
+          "302": { "description": "Redirect to /dashboard if the file belongs to another user, or to /login if not authenticated" },
+          "404": { "description": "File not found" }
+        }
+      }
+    },
+    "/download/{file_id}": {
+      "get": {
+        "tags": ["Downloads"],
+        "summary": "Download the original file",
+        "description": "Increments the file download counter. Only the file owner can download it.",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The file as an attachment",
+            "content": {
+              "application/octet-stream": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "302": { "description": "Redirect to /dashboard if the file is missing on disk" },
+          "403": { "description": "The file belongs to another user" },
+          "404": { "description": "File record not found" }
+        }
+      }
+    },
+    "/download/timestamp/{file_id}": {
+      "get": {
+        "tags": ["Downloads"],
+        "summary": "Download the OpenTimestamps proof (.ots)",
+        "description": "Increments the timestamp download counter. Only the file owner can download it.",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The .ots timestamp proof as an attachment",
+            "content": {
+              "application/octet-stream": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "302": { "description": "Redirect to /dashboard if the proof is missing on disk" },
+          "403": { "description": "The file belongs to another user" },
+          "404": { "description": "File record not found" }
+        }
+      }
+    },
+    "/download/signature/{file_id}": {
+      "get": {
+        "tags": ["Downloads"],
+        "summary": "Download the GPG detached signature (.sig)",
+        "description": "Increments the signature download counter. Only the file owner can download it.",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The .sig detached signature as an attachment",
+            "content": {
+              "application/octet-stream": {
+                "schema": { "type": "string", "format": "binary" }
+              }
+            }
+          },
+          "302": { "description": "Redirect to /dashboard if the signature is missing on disk" },
+          "403": { "description": "The file belongs to another user" },
+          "404": { "description": "File record not found" }
+        }
+      }
+    },
+    "/symbols-dashboard": {
+      "get": {
+        "tags": ["Symbols"],
+        "summary": "Symbols management page",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "HTML page listing the user's symbols" },
+          "302": { "$ref": "#/components/responses/RedirectToLogin" }
+        }
+      }
+    },
+    "/api/symbols": {
+      "post": {
+        "tags": ["Symbols"],
+        "summary": "Register a new symbol",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "description"],
+                "properties": {
+                  "name": { "type": "string", "example": "MY-SYMBOL" },
+                  "description": { "type": "string", "example": "A test symbol" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Symbol registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Symbol registered successfully" },
+                    "symbol": { "$ref": "#/components/schemas/Symbol" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing body or required field",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

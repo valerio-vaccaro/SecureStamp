@@ -1,5 +1,6 @@
 flask
 flask-sqlalchemy
+flask-mail
 flask-migrate
 flask-login
 python-dotenv

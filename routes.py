@@ -1,8 +1,8 @@
 import os
-from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, send_file, abort
+from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, send_file, abort, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
-from models import User, File
+from models import User, File, Symbol
 from app import db
 import subprocess
 import uuid
@@ -204,3 +204,56 @@ def download_signature(file_id):
     except FileNotFoundError:
         flash('File not found', 'error')
         return redirect(url_for('main.dashboard'))
+
+@main_bp.route('/api/docs')
+def api_docs():
+    """Swagger UI page documenting all API endpoints"""
+    return render_template('swagger.html')
+
+@main_bp.route('/symbols-dashboard')
+@login_required
+def symbols_dashboard():
+    """Web page for managing symbols"""
+    symbols = Symbol.query.filter_by(user_id=current_user.id).order_by(Symbol.created_at.desc()).all()
+    return render_template('symbols.html', symbols=symbols)
+
+@main_bp.route('/api/symbols', methods=['POST'])
+@login_required
+def register_symbol():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+
+        # Validate required fields
+        required_fields = ['name', 'description']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+
+        # Create new symbol
+        new_symbol = Symbol(
+            name=data['name'],
+            description=data.get('description', ''),
+            user_id=current_user.id,
+            created_at=datetime.utcnow()
+        )
+
+        db.session.add(new_symbol)
+        db.session.commit()
+
+        # Return data in format matching the table structure
+        return jsonify({
+            'message': 'Symbol registered successfully',
+            'symbol': {
+                'id': new_symbol.id,
+                'name': new_symbol.name,
+                'description': new_symbol.description,
+                'created_at': new_symbol.created_at.strftime('%Y-%m-%d %H:%M'),
+                'user_id': new_symbol.user_id
+            }
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500

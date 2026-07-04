@@ -4,6 +4,7 @@ from models import File, User
 from tabulate import tabulate
 from datetime import datetime
 import subprocess
+from flask_mail import Mail, Message
 
 def format_size(size):
     """Convert size in bytes to human readable format"""
@@ -84,6 +85,22 @@ def update_files():
                         print(f"Timestamp completed for file {file.file_path}!!!")
                         file.status = 'Timestamp completed'
                         db.session.commit()
+                        
+                        # Send email notification to user
+                        subject = "SecureStamp: Timestamp Completed"
+                        body = f"Your file '{file.original_filename}' has been successfully timestamped."
+                        send_email(user.email, subject, body)
+                        print(f"Notification email sent to {user.email}")
+
+def send_email(recipient, subject, body):
+    with create_app().app_context():
+        mail = Mail()
+        msg = Message(
+            subject=subject,
+            recipients=[recipient],
+            body=body
+        )
+        mail.send(msg)
 
 if __name__ == "__main__":
     import os
