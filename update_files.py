@@ -53,15 +53,28 @@ def normalize_base_url(raw_url):
 def get_public_base_url():
     app = create_app()
     with app.app_context():
-        return normalize_base_url(
-            app.config.get('PUBLIC_BASE_URL') or app.config.get('ONION_URL')
-        )
+        return normalize_base_url(app.config.get('PUBLIC_BASE_URL'))
 
 
 def build_platform_link(base_url, path):
     if not base_url:
         return None
     return f"{base_url}{path}"
+
+
+def format_elapsed_time(start_time, end_time):
+    total_seconds = max(0, int((end_time - start_time).total_seconds()))
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    parts = []
+    if hours:
+        parts.append(f"{hours}h")
+    if minutes:
+        parts.append(f"{minutes}m")
+    if seconds or not parts:
+        parts.append(f"{seconds}s")
+    return " ".join(parts)
 
 
 def build_timestamp_completion_email(file, user):
@@ -74,6 +87,7 @@ def build_timestamp_completion_email(file, user):
         file_hash=calculate_file_hash(file.file_path),
         file_size=get_file_size_string(file),
         confirmed_at=confirmed_at,
+        completion_time=format_elapsed_time(file.uploaded_at, confirmed_at),
         file_download_url=build_platform_link(base_url, f"/download/{file.storage_key}"),
         timestamp_download_url=build_platform_link(base_url, f"/download/timestamp/{file.storage_key}"),
         file_detail_url=build_platform_link(base_url, f"/files/{file.storage_key}"),
@@ -161,7 +175,7 @@ def update_files():
                         db.session.commit()
 
                         if user.email_notifications and mail_enabled:
-                            subject = f"SecureStamp: Timestamp Completed {file.original_filename}"
+                            subject = f"SecureStamp.it: Timestamp Completed {file.original_filename}"
                             html_body = build_timestamp_completion_email(file, user)
                             send_email(user.email, subject, html_body)
                             print(f"Notification email sent to {user.email}")

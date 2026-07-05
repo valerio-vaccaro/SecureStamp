@@ -12,7 +12,7 @@
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background-color:#ffffff;border:1px solid #d8e3ef;border-radius:16px;overflow:hidden;">
                     <tr>
                         <td style="padding:28px 32px;background:linear-gradient(135deg,#2d7fff 0%,#1c6cf3 100%);color:#ffffff;">
-                            <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85;">SecureStamp</div>
+                            <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85;">SecureStamp.it</div>
                             <h1 style="margin:10px 0 0;font-size:26px;line-height:1.2;">Timestamp completed</h1>
                             <p style="margin:10px 0 0;font-size:15px;line-height:1.6;opacity:0.92;">The timestamp for <strong>{{ file.original_filename }}</strong> has been confirmed.</p>
                         </td>
@@ -20,8 +20,8 @@
                     <tr>
                         <td style="padding:28px 32px;">
                             <p style="margin:0 0 18px;font-size:15px;line-height:1.7;">Hello {{ user.username }},</p>
-                            <p style="margin:0 0 14px;font-size:15px;line-height:1.7;">SecureStamp has completed the timestamping workflow for your uploaded file. The record details are below.</p>
-                            <p style="margin:0 0 22px;font-size:14px;line-height:1.7;color:#5c7088;">To protect access to your evidence package, the links in this email work only after you log in to the SecureStamp platform with your account.</p>
+                            <p style="margin:0 0 14px;font-size:15px;line-height:1.7;">SecureStamp.it has completed the timestamping workflow for your uploaded file. The record details are below.</p>
+                            <p style="margin:0 0 22px;font-size:14px;line-height:1.7;color:#5c7088;">To protect access to your evidence package, the links in this email work only after you log in to the SecureStamp.it platform with your account.</p>
 
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
                                 <tr>
@@ -45,6 +45,10 @@
                                     <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:14px;color:#10233b;">{{ confirmed_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                                 </tr>
                                 <tr>
+                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:13px;font-weight:700;color:#54657b;">Time to confirmation</td>
+                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:14px;color:#10233b;">{{ completion_time }}</td>
+                                </tr>
+                                <tr>
                                     <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:13px;font-weight:700;color:#54657b;">File size</td>
                                     <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:14px;color:#10233b;">{{ file_size }}</td>
                                 </tr>
@@ -63,7 +67,7 @@
                             {% if file_download_url or timestamp_download_url or file_detail_url %}
                             <div style="padding:22px 0 6px;">
                                 <h2 style="margin:0 0 10px;font-size:18px;line-height:1.4;color:#10233b;">Available actions</h2>
-                                <p style="margin:0 0 18px;font-size:14px;line-height:1.7;color:#5c7088;">After signing in, you can download the original file, retrieve the completed timestamp proof, and inspect the timestamp record details from your SecureStamp workspace.</p>
+                                <p style="margin:0 0 18px;font-size:14px;line-height:1.7;color:#5c7088;">After signing in, you can download the original file, retrieve the completed timestamp proof, and inspect the timestamp record details from your SecureStamp.it workspace.</p>
                                 {% if file_download_url %}
                                 <a href="{{ file_download_url }}" style="display:inline-block;margin:0 10px 10px 0;padding:12px 18px;border-radius:999px;background-color:#12b981;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Download file</a>
                                 {% endif %}
@@ -77,9 +81,9 @@
                             {% endif %}
 
                             {% if platform_login_url %}
-                            <p style="margin:8px 0 0;font-size:13px;line-height:1.7;color:#5c7088;">If you are not logged in yet, open <a href="{{ platform_login_url }}" style="color:#1c6cf3;text-decoration:none;">the SecureStamp login page</a> first, then return to the links above.</p>
+                            <p style="margin:8px 0 0;font-size:13px;line-height:1.7;color:#5c7088;">If you are not logged in yet, open <a href="{{ platform_login_url }}" style="color:#1c6cf3;text-decoration:none;">the SecureStamp.it login page</a> first, then return to the links above.</p>
                             {% else %}
-                            <p style="margin:8px 0 0;font-size:13px;line-height:1.7;color:#5c7088;">If the action links do not open directly, log in to SecureStamp first and then access this file from your dashboard.</p>
+                            <p style="margin:8px 0 0;font-size:13px;line-height:1.7;color:#5c7088;">If the action links do not open directly, log in to SecureStamp.it first and then access this file from your dashboard.</p>
                             {% endif %}
 
                             <p style="margin:22px 0 0;font-size:13px;line-height:1.7;color:#5c7088;">This notification was generated because email notifications are enabled on your account.</p>
