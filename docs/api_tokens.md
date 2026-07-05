@@ -33,10 +33,13 @@ The response returns `file_uuid` for each file. Use that UUID in all file downlo
 ```bash
 curl -X POST \
   -H "Authorization: Bearer $TOKEN" \
+  -F "notification_email=optional@example.com" \
   -F "files=@/path/to/document.pdf" \
   -F "files=@/path/to/image.png" \
   "$BASE_URL/api/files/upload"
 ```
+
+`notification_email` is optional. If provided, SecureStamp.it also sends the timestamp completion email to that address for every uploaded file in the request.
 
 ## Download Original File
 

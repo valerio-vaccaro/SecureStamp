@@ -23,7 +23,12 @@
                     <div class="mb-3">
                         <label for="files" class="form-label">Choose files</label>
                         <input type="file" class="form-control" id="files" name="files" multiple>
-                        <div class="form-text">Allowed file types: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG, GIF</div>
+                        <div class="form-text">Any file type can be uploaded.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notification_email" class="form-label">Additional confirmation email</label>
+                        <input type="email" class="form-control" id="notification_email" name="notification_email" placeholder="optional@example.com">
+                        <div class="form-text">Optional. If set, SecureStamp.it will also send the timestamp completion email to this address for every file in this upload.</div>
                     </div>
                     <div id="upload-preview" class="upload-preview"></div>
                 </div>
@@ -82,7 +87,16 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
                 window.location.href = '{{ url_for("main.dashboard") }}';
             }, 1000);
         } else {
-            uploadStatus.innerHTML = '<div class="alert alert-danger">Upload failed. Please try again.</div>';
+            let message = 'Upload failed. Please try again.';
+            try {
+                const payload = JSON.parse(xhr.responseText);
+                if (payload.error) {
+                    message = payload.error;
+                }
+            } catch (error) {
+                // Keep the default message when the server does not return JSON.
+            }
+            uploadStatus.innerHTML = `<div class="alert alert-danger">${message}</div>`;
         }
     });
 

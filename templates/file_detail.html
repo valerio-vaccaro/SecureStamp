@@ -52,6 +52,12 @@
                             <div class="detail-label">Owner</div>
                             <div class="detail-value"><i class="fas fa-user me-2"></i>{{ current_user.username }}</div>
                         </div>
+                        {% if file.notification_email %}
+                        <div class="detail-item">
+                            <div class="detail-label">Additional Email</div>
+                            <div class="detail-value"><i class="fas fa-envelope me-2"></i>{{ file.notification_email }}</div>
+                        </div>
+                        {% endif %}
                         {% if file_hash %}
                         <div class="detail-item">
                             <div class="detail-label">SHA256 Hash</div>

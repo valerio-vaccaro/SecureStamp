@@ -10,6 +10,7 @@ import subprocess
 import uuid
 import hashlib
 import os
+from email.utils import parseaddr
 from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
@@ -57,6 +58,7 @@ def build_file_payload(file):
         'file_uuid': file.storage_key,
         'filename': file.filename,
         'original_filename': file.original_filename,
+        'notification_email': file.notification_email,
         'uploaded_at': file.uploaded_at.isoformat(),
         'status': file.status,
         'file_downloads': file.file_downloads,
@@ -146,8 +148,20 @@ def get_request_user():
     return getattr(g, 'request_user', current_user)
 
 
-def process_uploaded_files(uploaded_file_objects, user):
+def normalize_optional_email(raw_email):
+    raw_email = (raw_email or '').strip()
+    if not raw_email:
+        return None
+
+    parsed_email = parseaddr(raw_email)[1]
+    if not parsed_email or parsed_email != raw_email or '@' not in parsed_email:
+        return None
+    return parsed_email
+
+
+def process_uploaded_files(uploaded_file_objects, user, notification_email=None):
     uploaded_files = []
+    notification_email = normalize_optional_email(notification_email)
 
     for file in uploaded_file_objects:
         if file.filename == '':
@@ -169,6 +183,7 @@ def process_uploaded_files(uploaded_file_objects, user):
             new_file = File(
                 filename=unique_filename,
                 original_filename=filename,
+                notification_email=notification_email,
                 user_id=user.id,
                 file_path=file_path,
                 status='Timestamp requested'
@@ -177,6 +192,7 @@ def process_uploaded_files(uploaded_file_objects, user):
             uploaded_files.append({
                 'file_uuid': new_file.storage_key,
                 'name': filename,
+                'notification_email': notification_email,
                 'status': 'success',
             })
 
@@ -243,8 +259,7 @@ def dashboard():
     return render_template('dashboard.html', files=files, config=current_app.config)
 
 def allowed_file(filename):
-    ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'doc', 'docx', 'zip', 'gz', 'bz2'}
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return bool((filename or '').strip())
 
 @main_bp.route('/upload', methods=['GET', 'POST'])
 @login_required
@@ -254,7 +269,11 @@ def upload():
             return {'error': 'No file part'}, 400
 
         files = request.files.getlist('files')
-        uploaded_files = process_uploaded_files(files, current_user)
+        notification_email = normalize_optional_email(request.form.get('notification_email'))
+        if request.form.get('notification_email') and not notification_email:
+            return {'error': 'Invalid notification email'}, 400
+
+        uploaded_files = process_uploaded_files(files, current_user, notification_email)
         
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return {'files': uploaded_files}
@@ -481,8 +500,12 @@ def api_upload_files():
         return jsonify({'error': 'No file part'}), 400
 
     user = get_request_user()
+    notification_email = normalize_optional_email(request.form.get('notification_email'))
+    if request.form.get('notification_email') and not notification_email:
+        return jsonify({'error': 'Invalid notification email'}), 400
+
     files = request.files.getlist('files')
-    uploaded_files = process_uploaded_files(files, user)
+    uploaded_files = process_uploaded_files(files, user, notification_email)
     return jsonify({'files': uploaded_files})
 
 

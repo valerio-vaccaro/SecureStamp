@@ -33,6 +33,7 @@
         "properties": {
           "file_uuid": { "type": "string", "example": "550e8400-e29b-41d4-a716-446655440000" },
           "name": { "type": "string", "example": "document.pdf" },
+          "notification_email": { "type": "string", "format": "email", "example": "optional@example.com" },
           "status": { "type": "string", "example": "success" }
         }
       },
@@ -42,6 +43,7 @@
           "file_uuid": { "type": "string", "example": "550e8400-e29b-41d4-a716-446655440000" },
           "filename": { "type": "string", "example": "550e8400-e29b-41d4-a716-446655440000.pdf" },
           "original_filename": { "type": "string", "example": "document.pdf" },
+          "notification_email": { "type": "string", "format": "email", "nullable": true, "example": "optional@example.com" },
           "uploaded_at": { "type": "string", "format": "date-time" },
           "status": { "type": "string", "example": "Timestamp completed" },
           "file_downloads": { "type": "integer", "example": 2 },
@@ -183,7 +185,7 @@
       "post": {
         "tags": ["Files"],
         "summary": "Upload one or more files",
-        "description": "Each uploaded file is GPG-signed and timestamped with OpenTimestamps. Allowed extensions: txt, pdf, png, jpg, jpeg, gif, doc, docx, zip, gz, bz2. Send the `X-Requested-With: XMLHttpRequest` header to receive a JSON response instead of a redirect.",
+        "description": "Each uploaded file is GPG-signed and timestamped with OpenTimestamps. Any file type is accepted. Send the `X-Requested-With: XMLHttpRequest` header to receive a JSON response instead of a redirect.",
         "security": [{ "cookieAuth": [] }],
         "parameters": [
           {
@@ -205,6 +207,11 @@
                   "files": {
                     "type": "array",
                     "items": { "type": "string", "format": "binary" }
+                  },
+                  "notification_email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Optional additional recipient for timestamp completion emails on all uploaded files in this request"
                   }
                 }
               }
@@ -410,6 +417,11 @@
                   "files": {
                     "type": "array",
                     "items": { "type": "string", "format": "binary" }
+                  },
+                  "notification_email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "Optional additional recipient for timestamp completion emails on all uploaded files in this request"
                   }
                 }
               }

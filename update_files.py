@@ -2,6 +2,7 @@
 import os
 import subprocess
 import hashlib
+import mimetypes
 from datetime import datetime
 
 from flask import render_template
@@ -95,6 +96,44 @@ def build_timestamp_completion_email(file, user):
     )
 
 
+def build_attachment_confirmation_email(file, user):
+    confirmed_at = datetime.utcnow()
+    return render_template(
+        'emails/timestamp_completed_attachment.html',
+        user=user,
+        file=file,
+        file_hash=calculate_file_hash(file.file_path),
+        file_size=get_file_size_string(file),
+        confirmed_at=confirmed_at,
+        completion_time=format_elapsed_time(file.uploaded_at, confirmed_at),
+    )
+
+
+def get_primary_notification_recipient(user):
+    if user.email_notifications and user.email:
+        return user.email.strip()
+    return None
+
+
+def get_secondary_notification_recipient(file, user):
+    if not file.notification_email:
+        return None
+
+    secondary = file.notification_email.strip()
+    primary = (user.email or '').strip().lower()
+    if secondary.lower() == primary:
+        return None
+    return secondary
+
+
+def build_existing_attachments(file):
+    candidates = [
+        (file.file_path, file.original_filename),
+        (f"{file.file_path}.ots", f"{file.original_filename}.ots"),
+    ]
+    return [(file_path, attachment_name) for file_path, attachment_name in candidates if os.path.exists(file_path)]
+
+
 def smtp_configured(app):
     required_keys = ['MAIL_SERVER', 'MAIL_PORT', 'MAIL_DEFAULT_SENDER']
     return all(app.config.get(key) for key in required_keys)
@@ -174,26 +213,47 @@ def update_files():
                         file.status = 'Timestamp completed'
                         db.session.commit()
 
-                        if user.email_notifications and mail_enabled:
+                        primary_recipient = get_primary_notification_recipient(user)
+                        secondary_recipient = get_secondary_notification_recipient(file, user)
+
+                        if mail_enabled:
                             subject = f"SecureStamp.it: Timestamp Completed {file.original_filename}"
-                            html_body = build_timestamp_completion_email(file, user)
-                            send_email(user.email, subject, html_body)
-                            print(f"Notification email sent to {user.email}")
-                        elif user.email_notifications:
-                            print(f"Email notification skipped for {user.email}: SMTP is not configured")
+
+                            if primary_recipient:
+                                html_body = build_timestamp_completion_email(file, user)
+                                send_email([primary_recipient], subject, html_body)
+                                print(f"Primary notification email sent to {primary_recipient}")
+
+                            if secondary_recipient:
+                                html_body = build_attachment_confirmation_email(file, user)
+                                attachments = build_existing_attachments(file)
+                                send_email(
+                                    [secondary_recipient],
+                                    subject,
+                                    html_body,
+                                    attachments=attachments,
+                                )
+                                print(f"Secondary notification email sent to {secondary_recipient}")
+                        elif primary_recipient or secondary_recipient:
+                            recipients = [recipient for recipient in [primary_recipient, secondary_recipient] if recipient]
+                            print(f"Email notification skipped for {', '.join(recipients)}: SMTP is not configured")
                         else:
-                            print(f"Email notification skipped for {user.email}")
+                            print(f"Email notification skipped for file {file.storage_key}: no recipients configured")
                 else:
                     print(result.stdout.decode('utf-8'))
 
-def send_email(recipient, subject, html_body):
+def send_email(recipients, subject, html_body, attachments=None):
     app = create_app()
     with app.app_context():
         msg = Message(
             subject=subject,
-            recipients=[recipient],
+            recipients=recipients,
             html=html_body
         )
+        for file_path, attachment_name in attachments or []:
+            with open(file_path, 'rb') as handle:
+                mime_type = mimetypes.guess_type(attachment_name)[0] or 'application/octet-stream'
+                msg.attach(attachment_name, mime_type, handle.read())
         mail.send(msg)
 
 if __name__ == "__main__":
