@@ -14,6 +14,7 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     locked = db.Column(db.Boolean, default=True, nullable=False)
     files = db.relationship('File', backref='owner', lazy=True)
+    api_tokens = db.relationship('ApiToken', backref='user', lazy=True, cascade='all, delete-orphan')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -55,4 +56,26 @@ class Symbol(db.Model):
     name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow) 
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ApiToken(db.Model):
+    __tablename__ = 'api_tokens'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    token_hash = db.Column(db.String(64), unique=True, nullable=False)
+    token_prefix = db.Column(db.String(16), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    max_hits = db.Column(db.Integer, nullable=True)
+    hits = db.Column(db.Integer, default=0, nullable=False)
+    first_used_at = db.Column(db.DateTime, nullable=True)
+    last_used_at = db.Column(db.DateTime, nullable=True)
+    locked = db.Column(db.Boolean, default=False, nullable=False)
+    can_list_files = db.Column(db.Boolean, default=True, nullable=False)
+    can_upload_files = db.Column(db.Boolean, default=True, nullable=False)
+    can_download_files = db.Column(db.Boolean, default=True, nullable=False)
+    can_download_timestamps = db.Column(db.Boolean, default=True, nullable=False)
+    can_download_signatures = db.Column(db.Boolean, default=True, nullable=False)
+    can_manage_symbols = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)

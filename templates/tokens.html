@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Authorization Tokens{% endblock %}
+
+{% block content %}
+<div class="section-stack">
+    <section class="hero-panel">
+        <div class="eyebrow">
+            <i class="fas fa-key"></i>
+            API Access
+        </div>
+        <h1 class="page-title">Authorization tokens</h1>
+        <p class="page-subtitle">Create personal bearer tokens that can use the API as your account. Each token can be locked, deleted, capped by maximum hits, and monitored with individual usage statistics.</p>
+    </section>
+
+    {% if new_token_value %}
+    <section class="card">
+        <div class="card-header">
+            <h2 class="section-title">New token</h2>
+        </div>
+        <div class="card-body">
+            <p class="page-subtitle mt-0">Copy this token now. It will not be shown again after you leave this page.</p>
+            <div class="p-3 rounded-3" style="background: #eff5fb; border: 1px solid rgba(15, 23, 42, 0.08);">
+                <code class="user-select-all" style="display: inline-block; width: 100%; overflow-wrap: anywhere;">{{ new_token_value }}</code>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="card">
+        <div class="card-header">
+            <h2 class="section-title">Create token</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <label for="name" class="form-label">Token name</label>
+                        <input type="text" class="form-control" id="name" name="name" placeholder="Production integration" required>
+                    </div>
+                    <div class="col-lg-4">
+                        <label for="permission_preset" class="form-label">Access preset</label>
+                        <select class="form-select" id="permission_preset" name="permission_preset">
+                            {% for preset_key, preset in token_permission_presets.items() %}
+                            <option value="{{ preset_key }}">{{ preset.label }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Use <strong>Upload and timestamp only</strong> to allow only new file submission with timestamp creation.</div>
+                    </div>
+                    <div class="col-lg-3">
+                        <label for="max_hits" class="form-label">Maximum hits</label>
+                        <input type="number" min="1" class="form-control" id="max_hits" name="max_hits" placeholder="Unlimited when empty">
+                        <div class="form-text">Leave blank for unlimited usage.</div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create Token
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="card-header">
+            <h2 class="section-title">Your tokens</h2>
+        </div>
+        <div class="card-body">
+            {% if tokens %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Usage</th>
+                            <th>Max Hits</th>
+                            <th>First Usage</th>
+                            <th>Last Usage</th>
+                            <th>Created</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for token in tokens %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ token.name }}</div>
+                                <div class="small text-muted">Prefix: <code>{{ token.token_prefix }}</code></div>
+                                <div class="small text-muted">
+                                    Access:
+                                    {% if token.can_upload_files and not token.can_list_files and not token.can_download_files and not token.can_download_timestamps and not token.can_download_signatures and not token.can_manage_symbols %}
+                                    Upload and timestamp only
+                                    {% else %}
+                                    Full API access
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if token.locked %}
+                                <span class="badge bg-danger">Locked</span>
+                                {% else %}
+                                <span class="badge bg-success">Active</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="stat-pill-row">
+                                    <span class="stat-pill"><i class="fas fa-chart-line"></i> Hits: {{ token.hits }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('main.update_token_max_hits', token_id=token.id) }}" class="d-flex gap-2 align-items-center">
+                                    <input type="number" min="1" class="form-control" name="max_hits" value="{{ token.max_hits if token.max_hits is not none else '' }}" placeholder="Unlimited" style="min-width: 120px;">
+                                    <button type="submit" class="btn btn-sm btn-secondary">
+                                        <i class="fas fa-save"></i> Save
+                                    </button>
+                                </form>
+                            </td>
+                            <td>{{ token.first_used_at.strftime('%Y-%m-%d %H:%M:%S') if token.first_used_at else 'Never' }}</td>
+                            <td>{{ token.last_used_at.strftime('%Y-%m-%d %H:%M:%S') if token.last_used_at else 'Never' }}</td>
+                            <td>{{ token.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td class="text-center">
+                                <div class="btn-group justify-content-center">
+                                    <form method="POST" action="{{ url_for('main.toggle_token_lock', token_id=token.id) }}">
+                                        <button type="submit" class="btn btn-sm {{ 'btn-success' if token.locked else 'btn-warning' }}">
+                                            <i class="fas {{ 'fa-lock-open' if token.locked else 'fa-lock' }}"></i>
+                                            {{ 'Unlock' if token.locked else 'Lock' }}
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('main.reset_token_stats', token_id=token.id) }}">
+                                        <button type="submit" class="btn btn-sm btn-info">
+                                            <i class="fas fa-rotate-left"></i> Reset Stats
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('main.delete_token', token_id=token.id) }}" onsubmit="return confirm('Delete this token permanently?');">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-key fa-2x"></i>
+                <h3 class="section-title mb-2">No authorization tokens yet</h3>
+                <p class="page-subtitle mx-auto">Create a token to authenticate API calls as your user without sharing your account password.</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

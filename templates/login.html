@@ -18,6 +18,29 @@
                     <li>Keep timestamp and signature artifacts linked to the original upload.</li>
                     <li>Operate from a clean interface designed for day-to-day document control.</li>
                 </ul>
+                <div class="service-stats">
+                    <div class="service-stat-card">
+                        <span class="service-stat-label">Accounts</span>
+                        <strong class="service-stat-value">{{ service_stats.users }}</strong>
+                    </div>
+                    <div class="service-stat-card">
+                        <span class="service-stat-label">Stored Files</span>
+                        <strong class="service-stat-value">{{ service_stats.files }}</strong>
+                    </div>
+                    <div class="service-stat-card">
+                        <span class="service-stat-label">Completed Timestamps</span>
+                        <strong class="service-stat-value">{{ service_stats.completed_timestamps }}</strong>
+                    </div>
+                    <div class="service-stat-card">
+                        <span class="service-stat-label">Pending Timestamps</span>
+                        <strong class="service-stat-value">{{ service_stats.pending_timestamps }}</strong>
+                    </div>
+                    <div class="service-stat-card service-stat-card-wide">
+                        <span class="service-stat-label">Total Artifact Downloads</span>
+                        <strong class="service-stat-value">{{ service_stats.downloads }}</strong>
+                    </div>
+                </div>
+                <p class="small mt-3 mb-0 text-white-50">Anonymous service statistics only. No user identities or document names are shown here.</p>
             </div>
         </div>
         <div class="col-lg-7">

@@ -7,3 +7,4 @@ python-dotenv
 pymysql
 werkzeug
 tabulate
+requests

@@ -149,6 +149,11 @@ Possible file statuses:
 - ✅ File extensions are validated
 - 🔄 Files are stored with unique names
 
+## Token API Usage
+
+- Minimal token documentation: [docs/api_tokens.md](/home/valerio/MyProjects/securestamp/SecureStamp/docs/api_tokens.md:1)
+- Python example client: [examples/token_api_client.py](/home/valerio/MyProjects/securestamp/SecureStamp/examples/token_api_client.py:1)
+
 ## Running the Application
 ```bash
 flask run

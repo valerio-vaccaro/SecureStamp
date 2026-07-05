@@ -1,8 +1,10 @@
 import os
-from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, send_file, abort, jsonify
+import secrets
+from functools import wraps
+from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, send_file, abort, jsonify, g, session
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
-from models import User, File, Symbol
+from models import User, File, Symbol, ApiToken
 from app import db
 import subprocess
 import uuid
@@ -11,6 +13,161 @@ from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
 main_bp = Blueprint('main', __name__)
+
+TOKEN_PERMISSION_PRESETS = {
+    'full_access': {
+        'label': 'Full API access',
+        'permissions': {
+            'can_list_files': True,
+            'can_upload_files': True,
+            'can_download_files': True,
+            'can_download_timestamps': True,
+            'can_download_signatures': True,
+            'can_manage_symbols': True,
+        },
+    },
+    'upload_and_timestamp_only': {
+        'label': 'Upload and timestamp only',
+        'permissions': {
+            'can_list_files': False,
+            'can_upload_files': True,
+            'can_download_files': False,
+            'can_download_timestamps': False,
+            'can_download_signatures': False,
+            'can_manage_symbols': False,
+        },
+    },
+}
+
+
+def hash_api_token(raw_token):
+    return hashlib.sha256(raw_token.encode('utf-8')).hexdigest()
+
+
+def extract_bearer_token():
+    authorization = request.headers.get('Authorization', '')
+    if authorization.startswith('Bearer '):
+        return authorization.split(' ', 1)[1].strip()
+    return None
+
+
+def build_file_payload(file):
+    return {
+        'id': file.id,
+        'filename': file.filename,
+        'original_filename': file.original_filename,
+        'uploaded_at': file.uploaded_at.isoformat(),
+        'status': file.status,
+        'file_downloads': file.file_downloads,
+        'timestamp_downloads': file.timestamp_downloads,
+        'signature_downloads': file.signature_downloads,
+    }
+
+
+def build_public_service_stats():
+    return {
+        'users': User.query.count(),
+        'files': File.query.count(),
+        'completed_timestamps': File.query.filter_by(status='Timestamp completed').count(),
+        'pending_timestamps': File.query.filter_by(status='Timestamp requested').count(),
+        'downloads': db.session.query(
+            db.func.coalesce(
+                db.func.sum(File.file_downloads + File.timestamp_downloads + File.signature_downloads),
+                0,
+            )
+        ).scalar(),
+    }
+
+
+def resolve_api_user():
+    if current_user.is_authenticated:
+        g.request_user = current_user
+        g.api_token = None
+        return current_user, None
+
+    raw_token = extract_bearer_token()
+    if not raw_token:
+        return None, ('missing_token', 'Authentication required.')
+
+    api_token = ApiToken.query.filter_by(token_hash=hash_api_token(raw_token)).first()
+    if not api_token:
+        return None, ('invalid_token', 'Invalid API token.')
+    if api_token.locked:
+        return None, ('locked_token', 'API token is locked.')
+    if api_token.user.locked:
+        return None, ('locked_user', 'Token owner account is locked.')
+    if api_token.max_hits is not None and api_token.hits >= api_token.max_hits:
+        return None, ('max_hits_reached', 'API token hit limit reached.')
+
+    now = datetime.utcnow()
+    api_token.hits += 1
+    if api_token.first_used_at is None:
+        api_token.first_used_at = now
+    api_token.last_used_at = now
+    db.session.commit()
+
+    g.request_user = api_token.user
+    g.api_token = api_token
+    return api_token.user, None
+
+
+def api_auth_required(view_func):
+    @wraps(view_func)
+    def wrapped(*args, **kwargs):
+        user, error = resolve_api_user()
+        if not user:
+            return jsonify({'error': error[1], 'code': error[0]}), 401
+        return view_func(*args, **kwargs)
+    return wrapped
+
+
+def token_permission_required(permission_attr, error_message='This token cannot access this endpoint.'):
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapped(*args, **kwargs):
+            api_token = getattr(g, 'api_token', None)
+            if api_token is not None and not getattr(api_token, permission_attr, False):
+                return jsonify({'error': error_message, 'code': 'insufficient_scope'}), 403
+            return view_func(*args, **kwargs)
+        return wrapped
+    return decorator
+
+
+def get_request_user():
+    return getattr(g, 'request_user', current_user)
+
+
+def process_uploaded_files(uploaded_file_objects, user):
+    uploaded_files = []
+
+    for file in uploaded_file_objects:
+        if file.filename == '':
+            continue
+
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            unique_filename = f"{uuid.uuid4()}_{filename}"
+            file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
+            file.save(file_path)
+
+            subprocess.run(
+                ['gpg', '--local-user', current_app.config['GPG_USER'], '--output', file_path + '.sig', '--detach-sign', file_path],
+                stdout=subprocess.PIPE
+            )
+            subprocess.run(['ots-cli.js', 'stamp', file_path], stdout=subprocess.PIPE)
+
+            new_file = File(
+                filename=unique_filename,
+                original_filename=filename,
+                user_id=user.id,
+                file_path=file_path,
+                status='Timestamp requested'
+            )
+            db.session.add(new_file)
+            uploaded_files.append({'name': filename, 'status': 'success'})
+
+    db.session.commit()
+    return uploaded_files
 
 # Authentication routes
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -55,7 +212,7 @@ def login():
             return redirect(url_for('main.dashboard'))
         
         flash('Invalid username or password', 'error')
-    return render_template('login.html')
+    return render_template('login.html', service_stats=build_public_service_stats())
 
 @auth_bp.route('/logout')
 @login_required
@@ -83,37 +240,7 @@ def upload():
             return {'error': 'No file part'}, 400
 
         files = request.files.getlist('files')
-        uploaded_files = []
-
-        for file in files:
-            if file.filename == '':
-                continue
-
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                unique_filename = f"{uuid.uuid4()}_{filename}"
-                file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
-                file.save(file_path)
-
-                # create signature
-                result = subprocess.run(['gpg', '--local-user', current_app.config['GPG_USER'], '--output', file_path+'.sig', '--detach-sign', file_path], stdout=subprocess.PIPE)
-                print(result.stdout)
-
-                # create timestamp
-                result = subprocess.run(['ots-cli.js', 'stamp', file_path], stdout=subprocess.PIPE)
-                print(result.stdout)
-
-                new_file = File(
-                    filename=unique_filename,
-                    original_filename=filename,
-                    user_id=current_user.id,
-                    file_path=file_path,
-                    status='Timestamp requested'
-                )
-                db.session.add(new_file)
-                uploaded_files.append({'name': filename, 'status': 'success'})
-        
-        db.session.commit()
+        uploaded_files = process_uploaded_files(files, current_user)
         
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return {'files': uploaded_files}
@@ -174,6 +301,128 @@ def account_settings():
 
     return render_template('account.html')
 
+
+@main_bp.route('/tokens', methods=['GET', 'POST'])
+@login_required
+def manage_tokens():
+    if request.method == 'POST':
+        name = (request.form.get('name') or '').strip()
+        max_hits_raw = (request.form.get('max_hits') or '').strip()
+        permission_preset = request.form.get('permission_preset') or 'full_access'
+
+        if not name:
+            flash('Token name is required.', 'error')
+            return redirect(url_for('main.manage_tokens'))
+
+        if permission_preset not in TOKEN_PERMISSION_PRESETS:
+            flash('Invalid token permission preset.', 'error')
+            return redirect(url_for('main.manage_tokens'))
+
+        max_hits = None
+        if max_hits_raw:
+            try:
+                max_hits = int(max_hits_raw)
+            except ValueError:
+                flash('Maximum hits must be a number.', 'error')
+                return redirect(url_for('main.manage_tokens'))
+            if max_hits < 1:
+                flash('Maximum hits must be at least 1.', 'error')
+                return redirect(url_for('main.manage_tokens'))
+
+        raw_token = secrets.token_urlsafe(32)
+        new_token = ApiToken(
+            name=name,
+            token_hash=hash_api_token(raw_token),
+            token_prefix=raw_token[:12],
+            user_id=current_user.id,
+            max_hits=max_hits,
+            **TOKEN_PERMISSION_PRESETS[permission_preset]['permissions'],
+        )
+        db.session.add(new_token)
+        db.session.commit()
+
+        session['new_api_token_value'] = raw_token
+        flash('Authorization token created successfully.', 'success')
+        return redirect(url_for('main.manage_tokens'))
+
+    tokens = ApiToken.query.filter_by(user_id=current_user.id).order_by(ApiToken.created_at.desc()).all()
+    new_token_value = session.pop('new_api_token_value', None)
+    return render_template(
+        'tokens.html',
+        tokens=tokens,
+        new_token_value=new_token_value,
+        token_permission_presets=TOKEN_PERMISSION_PRESETS,
+    )
+
+
+@main_bp.route('/tokens/<int:token_id>/toggle-lock', methods=['POST'])
+@login_required
+def toggle_token_lock(token_id):
+    token = ApiToken.query.get_or_404(token_id)
+    if token.user_id != current_user.id:
+        abort(403)
+
+    token.locked = not token.locked
+    db.session.commit()
+    flash(f'Token { "locked" if token.locked else "unlocked" } successfully.', 'success')
+    return redirect(url_for('main.manage_tokens'))
+
+
+@main_bp.route('/tokens/<int:token_id>/max-hits', methods=['POST'])
+@login_required
+def update_token_max_hits(token_id):
+    token = ApiToken.query.get_or_404(token_id)
+    if token.user_id != current_user.id:
+        abort(403)
+
+    max_hits_raw = (request.form.get('max_hits') or '').strip()
+    if not max_hits_raw:
+        token.max_hits = None
+    else:
+        try:
+            max_hits = int(max_hits_raw)
+        except ValueError:
+            flash('Maximum hits must be a number.', 'error')
+            return redirect(url_for('main.manage_tokens'))
+
+        if max_hits < 1:
+            flash('Maximum hits must be at least 1.', 'error')
+            return redirect(url_for('main.manage_tokens'))
+
+        token.max_hits = max_hits
+
+    db.session.commit()
+    flash('Token hit limit updated successfully.', 'success')
+    return redirect(url_for('main.manage_tokens'))
+
+
+@main_bp.route('/tokens/<int:token_id>/reset-stats', methods=['POST'])
+@login_required
+def reset_token_stats(token_id):
+    token = ApiToken.query.get_or_404(token_id)
+    if token.user_id != current_user.id:
+        abort(403)
+
+    token.hits = 0
+    token.first_used_at = None
+    token.last_used_at = None
+    db.session.commit()
+    flash('Token statistics reset successfully.', 'success')
+    return redirect(url_for('main.manage_tokens'))
+
+
+@main_bp.route('/tokens/<int:token_id>/delete', methods=['POST'])
+@login_required
+def delete_token(token_id):
+    token = ApiToken.query.get_or_404(token_id)
+    if token.user_id != current_user.id:
+        abort(403)
+
+    db.session.delete(token)
+    db.session.commit()
+    flash('Token deleted successfully.', 'success')
+    return redirect(url_for('main.manage_tokens'))
+
 @main_bp.route('/files')
 @login_required
 def files():
@@ -197,6 +446,79 @@ def file_detail(file_id):
         file_hash = None
     
     return render_template('file_detail.html', file=file, file_hash=file_hash)
+
+
+@main_bp.route('/api/files', methods=['GET'])
+@api_auth_required
+@token_permission_required('can_list_files', 'This token cannot list files.')
+def api_files():
+    user = get_request_user()
+    files = File.query.filter_by(user_id=user.id).order_by(File.uploaded_at.desc()).all()
+    return jsonify({'files': [build_file_payload(file) for file in files]})
+
+
+@main_bp.route('/api/files/upload', methods=['POST'])
+@api_auth_required
+@token_permission_required('can_upload_files', 'This token cannot upload files or create timestamps.')
+def api_upload_files():
+    if 'files' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+
+    user = get_request_user()
+    files = request.files.getlist('files')
+    uploaded_files = process_uploaded_files(files, user)
+    return jsonify({'files': uploaded_files})
+
+
+@main_bp.route('/api/files/<int:file_id>/download', methods=['GET'])
+@api_auth_required
+@token_permission_required('can_download_files', 'This token cannot download original files.')
+def api_download_file(file_id):
+    user = get_request_user()
+    file = File.query.get_or_404(file_id)
+    if file.user_id != user.id:
+        return jsonify({'error': 'Forbidden'}), 403
+
+    try:
+        file.file_downloads += 1
+        db.session.commit()
+        return send_file(file.file_path, as_attachment=True, download_name=file.original_filename)
+    except FileNotFoundError:
+        return jsonify({'error': 'File not found'}), 404
+
+
+@main_bp.route('/api/files/<int:file_id>/timestamp', methods=['GET'])
+@api_auth_required
+@token_permission_required('can_download_timestamps', 'This token cannot download timestamp proofs.')
+def api_download_timestamp(file_id):
+    user = get_request_user()
+    file = File.query.get_or_404(file_id)
+    if file.user_id != user.id:
+        return jsonify({'error': 'Forbidden'}), 403
+
+    try:
+        file.timestamp_downloads += 1
+        db.session.commit()
+        return send_file(file.file_path + '.ots', as_attachment=True, download_name=file.original_filename + '.ots')
+    except FileNotFoundError:
+        return jsonify({'error': 'File not found'}), 404
+
+
+@main_bp.route('/api/files/<int:file_id>/signature', methods=['GET'])
+@api_auth_required
+@token_permission_required('can_download_signatures', 'This token cannot download signatures.')
+def api_download_signature(file_id):
+    user = get_request_user()
+    file = File.query.get_or_404(file_id)
+    if file.user_id != user.id:
+        return jsonify({'error': 'Forbidden'}), 403
+
+    try:
+        file.signature_downloads += 1
+        db.session.commit()
+        return send_file(file.file_path + '.sig', as_attachment=True, download_name=file.original_filename + '.sig')
+    except FileNotFoundError:
+        return jsonify({'error': 'File not found'}), 404
 
 @main_bp.route('/download/<int:file_id>')
 @login_required
@@ -274,9 +596,11 @@ def symbols_dashboard():
     return render_template('symbols.html', symbols=symbols)
 
 @main_bp.route('/api/symbols', methods=['POST'])
-@login_required
+@api_auth_required
+@token_permission_required('can_manage_symbols', 'This token cannot create symbols.')
 def register_symbol():
     try:
+        user = get_request_user()
         data = request.get_json()
         if not data:
             return jsonify({'error': 'No data provided'}), 400
@@ -291,7 +615,7 @@ def register_symbol():
         new_symbol = Symbol(
             name=data['name'],
             description=data.get('description', ''),
-            user_id=current_user.id,
+            user_id=user.id,
             created_at=datetime.utcnow()
         )
 
@@ -313,3 +637,17 @@ def register_symbol():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+@main_bp.route('/api/symbols/<int:symbol_id>', methods=['DELETE'])
+@api_auth_required
+@token_permission_required('can_manage_symbols', 'This token cannot delete symbols.')
+def delete_symbol(symbol_id):
+    user = get_request_user()
+    symbol = Symbol.query.get_or_404(symbol_id)
+    if symbol.user_id != user.id:
+        return jsonify({'error': 'Forbidden'}), 403
+
+    db.session.delete(symbol)
+    db.session.commit()
+    return jsonify({'message': 'Symbol deleted successfully'})
