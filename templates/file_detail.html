@@ -54,8 +54,28 @@
                         </div>
                         {% if file.notification_email %}
                         <div class="detail-item">
-                            <div class="detail-label">Additional Email</div>
+                            <div class="detail-label">External Email</div>
                             <div class="detail-value"><i class="fas fa-envelope me-2"></i>{{ file.notification_email }}</div>
+                        </div>
+                        {% endif %}
+                        {% if file.status != 'Timestamp completed' %}
+                        <div class="detail-item">
+                            <div class="detail-label">Update External Email</div>
+                            <div class="detail-value">
+                                <form method="post" class="d-grid gap-2">
+                                    <input
+                                        type="email"
+                                        class="form-control"
+                                        name="notification_email"
+                                        value="{{ file.notification_email or '' }}"
+                                        placeholder="optional@example.com"
+                                    >
+                                    <div class="form-text">Optional. This address receives the attachment-only timestamp completion email. Leave empty to remove it.</div>
+                                    <button type="submit" class="btn btn-outline-primary">
+                                        <i class="fas fa-save"></i> Save External Email
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                         {% endif %}
                         {% if file_hash %}

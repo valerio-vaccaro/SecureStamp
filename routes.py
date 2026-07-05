@@ -462,7 +462,7 @@ def files():
     user_files = File.query.filter_by(user_id=current_user.id).all()
     return render_template('files.html', files=user_files)
 
-@main_bp.route('/files/<file_ref>')
+@main_bp.route('/files/<file_ref>', methods=['GET', 'POST'])
 @login_required
 def file_detail(file_ref):
     file = get_file_by_reference(file_ref)
@@ -471,6 +471,22 @@ def file_detail(file_ref):
     if file.user_id != current_user.id:
         flash('Unauthorized access', 'error')
         return redirect(url_for('main.dashboard'))
+
+    if request.method == 'POST':
+        if file.status == 'Timestamp completed':
+            flash('The external notification email cannot be changed after timestamp completion.', 'error')
+            return redirect(url_for('main.file_detail', file_ref=file.storage_key))
+
+        raw_notification_email = request.form.get('notification_email')
+        notification_email = normalize_optional_email(raw_notification_email)
+        if raw_notification_email and not notification_email:
+            flash('Invalid external notification email.', 'error')
+            return redirect(url_for('main.file_detail', file_ref=file.storage_key))
+
+        file.notification_email = notification_email
+        db.session.commit()
+        flash('External notification email updated successfully.', 'success')
+        return redirect(url_for('main.file_detail', file_ref=file.storage_key))
     
     # Calculate file hash
     try:
