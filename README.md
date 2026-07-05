@@ -39,7 +39,13 @@ SECRET_KEY=your-secret-key
 UPLOAD_FOLDER=uploads
 GPG_USER=gpg-user
 ONION_URL=your-onion-address.onion
-
+MAIL_SERVER=smtp.example.com
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USE_SSL=False
+MAIL_USERNAME=smtp-user
+MAIL_PASSWORD=smtp-password
+MAIL_DEFAULT_SENDER=securestamp@example.com
 ```
 
 4. Initialize database:
@@ -157,4 +163,26 @@ Possible file statuses:
 ## Running the Application
 ```bash
 flask run
+```
+
+## Timestamp Email Notifications
+
+If a user enables email notifications in account settings, `update_files.py` sends one SMTP email for each file whose timestamp changes from `Timestamp requested` to `Timestamp completed`.
+
+Configure SMTP in `.env`:
+
+```env
+MAIL_SERVER=smtp.example.com
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USE_SSL=False
+MAIL_USERNAME=smtp-user
+MAIL_PASSWORD=smtp-password
+MAIL_DEFAULT_SENDER=securestamp@example.com
+```
+
+Run the updater:
+
+```bash
+python3 update_files.py
 ```
