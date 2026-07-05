@@ -3,54 +3,69 @@
 {% block title %}Upload Files{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">
-                <i class="fas fa-upload"></i> Upload Files
-            </h4>
+<div class="section-stack">
+    <section class="hero-panel">
+        <div class="eyebrow">
+            <i class="fas fa-cloud-arrow-up"></i>
+            Intake
+        </div>
+        <h1 class="page-title">Upload document packages</h1>
+        <p class="page-subtitle">Add one or more files to SecureStamp. Each upload can be paired with its timestamp evidence and signature material for later retrieval.</p>
+    </section>
+
+    <section class="card">
+        <div class="card-header">
+            <h2 class="section-title"><i class="fas fa-upload me-2"></i>File upload</h2>
         </div>
         <div class="card-body">
             <form id="uploadForm" method="post" enctype="multipart/form-data">
-                <div class="form-group mb-3">
-                    <label for="files" class="form-label">Choose files</label>
-                    <input type="file" class="form-control" id="files" name="files" multiple>
-                    <div class="form-text">
-                        Allowed file types: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG, GIF
+                <div class="upload-dropzone">
+                    <div class="mb-3">
+                        <label for="files" class="form-label">Choose files</label>
+                        <input type="file" class="form-control" id="files" name="files" multiple>
+                        <div class="form-text">Allowed file types: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG, GIF</div>
                     </div>
+                    <div id="upload-preview" class="upload-preview"></div>
                 </div>
-                
-                <div id="uploadProgress" class="mb-3" style="display: none;">
+
+                <div id="uploadProgress" class="mt-4" style="display: none;">
                     <div class="progress">
-                        <div class="progress-bar" role="progressbar" style="width: 0%" 
-                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        <div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
                     </div>
                 </div>
-                
-                <div id="uploadStatus" class="mb-3"></div>
-                
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-upload"></i> Upload Files
-                </button>
+
+                <div id="uploadStatus" class="mt-3"></div>
+
+                <div class="mt-4 d-flex flex-wrap gap-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Upload Files
+                    </button>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
             </form>
         </div>
-    </div>
+    </section>
 </div>
+{% endblock %}
 
+{% block extra_scripts %}
+{{ super() }}
 <script>
 document.getElementById('uploadForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    
+
     const formData = new FormData(this);
     const progressBar = document.querySelector('.progress-bar');
     const uploadProgress = document.getElementById('uploadProgress');
     const uploadStatus = document.getElementById('uploadStatus');
-    
+
     uploadProgress.style.display = 'block';
     uploadStatus.innerHTML = '';
-    
+
     const xhr = new XMLHttpRequest();
-    
+
     xhr.upload.addEventListener('progress', function(e) {
         if (e.lengthComputable) {
             const percentComplete = (e.loaded / e.total) * 100;
@@ -59,11 +74,10 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
             progressBar.setAttribute('aria-valuenow', percentComplete);
         }
     });
-    
+
     xhr.addEventListener('load', function() {
         if (xhr.status === 200) {
-            const response = JSON.parse(xhr.responseText);
-            uploadStatus.innerHTML = '<div class="alert alert-success">Files uploaded successfully!</div>';
+            uploadStatus.innerHTML = '<div class="alert alert-success">Files uploaded successfully.</div>';
             setTimeout(() => {
                 window.location.href = '{{ url_for("main.dashboard") }}';
             }, 1000);
@@ -71,14 +85,14 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
             uploadStatus.innerHTML = '<div class="alert alert-danger">Upload failed. Please try again.</div>';
         }
     });
-    
+
     xhr.addEventListener('error', function() {
         uploadStatus.innerHTML = '<div class="alert alert-danger">Upload failed. Please try again.</div>';
     });
-    
+
     xhr.open('POST', '{{ url_for("main.upload") }}', true);
     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     xhr.send(formData);
 });
 </script>
-{% endblock %} 
+{% endblock %}

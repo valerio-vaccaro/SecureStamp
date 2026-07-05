@@ -3,98 +3,138 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card shadow-sm mb-4">
-            <div class="card-body">
-                <h2 class="card-title">
-                    <i class="fas fa-user"></i> Welcome, {{ current_user.username }}!
-                </h2>
-            </div>
-        </div>
-    </div>
-</div>
+{% set total_file_downloads = files | sum(attribute='file_downloads') %}
+{% set total_timestamp_downloads = files | sum(attribute='timestamp_downloads') %}
+{% set total_signature_downloads = files | sum(attribute='signature_downloads') %}
 
-<div class="row">
-    <div class="col-12">
-        <div class="card shadow-sm">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0">
-                    <i class="fas fa-file-alt"></i> Your Files
-                </h3>
+<div class="section-stack">
+    <section class="hero-panel">
+        <div class="eyebrow">
+            <i class="fas fa-shield-check"></i>
+            Secure Workspace
+        </div>
+        <div class="toolbar">
+            <div>
+                <h1 class="page-title">Document control for {{ current_user.username }}</h1>
+                <p class="page-subtitle">Monitor uploaded assets, track evidence downloads, and manage timestamp packages from a single operational dashboard.</p>
+            </div>
+            <div>
                 <a href="{{ url_for('main.upload') }}" class="btn btn-primary">
-                    <i class="fas fa-upload"></i> Upload New Files
+                    <i class="fas fa-upload"></i> Upload Files
                 </a>
             </div>
-            <div class="card-body">
-                {% if files %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Filename</th>
-                                    <th>Upload Date</th>
-                                    <th>Status</th>
-                                    <th>Downloads</th>
-                                    <th class="text-center">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for file in files %}
-                                <tr>
-                                    <td>
-                                        <i class="fas fa-file"></i>
-                                        {{ file.original_filename }}
-                                    </td>
-                                    <td>{{ file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                                    <td>
-                                        <span class="badge bg-{{ file.get_status_badge() }}">
-                                            {{ file.status }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="small">
-                                            <i class="fas fa-file me-1"></i> {{ file.file_downloads }}
-                                            <i class="fas fa-clock ms-2 me-1"></i> {{ file.timestamp_downloads }}
-                                            <i class="fas fa-signature ms-2 me-1"></i> {{ file.signature_downloads }}
-                                        </div>
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="btn-group">
-                                            <a href="{{ url_for('main.download_file', file_id=file.id) }}" 
-                                               class="btn btn-sm btn-success">
-                                                <i class="fas fa-download"></i> File
-                                            </a>
-                                            <a href="{{ url_for('main.download_timestamp', file_id=file.id) }}" 
-                                               class="btn btn-sm btn-warning">
-                                                <i class="fas fa-clock"></i> Timestamp
-                                            </a>
-                                            <a href="{{ url_for('main.download_signature', file_id=file.id) }}" 
-                                               class="btn btn-sm btn-primary">
-                                                <i class="fas fa-signature"></i> Signature
-                                            </a>
-                                            <a href="{{ url_for('main.file_detail', file_id=file.id) }}" 
-                                               class="btn btn-sm btn-info">
-                                                <i class="fas fa-info-circle"></i> Details
-                                            </a>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="fas fa-file-upload fa-3x text-muted mb-3"></i>
-                        <p class="lead text-muted">No files uploaded yet.</p>
-                        <a href="{{ url_for('main.upload') }}" class="btn btn-primary">
-                            <i class="fas fa-upload"></i> Upload Your First File
-                        </a>
-                    </div>
-                {% endif %}
+        </div>
+        <div class="metric-grid">
+            <div class="metric-card">
+                <div class="metric-label">Stored Files</div>
+                <div class="metric-value">{{ files|length }}</div>
+                <div class="metric-note">Active records in your vault</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">File Downloads</div>
+                <div class="metric-value">{{ total_file_downloads }}</div>
+                <div class="metric-note">Direct file retrievals</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Timestamp Downloads</div>
+                <div class="metric-value">{{ total_timestamp_downloads }}</div>
+                <div class="metric-note">Verification packages served</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Signature Downloads</div>
+                <div class="metric-value">{{ total_signature_downloads }}</div>
+                <div class="metric-note">Signature bundles exported</div>
             </div>
         </div>
-    </div>
+    </section>
+
+    <section class="card">
+        <div class="card-header">
+            <div class="toolbar">
+                <div>
+                    <div class="eyebrow">
+                        <i class="fas fa-folder-open"></i>
+                        Repository
+                    </div>
+                    <h2 class="section-title">Your files</h2>
+                </div>
+                <a href="{{ url_for('main.upload') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-plus"></i> Add New File
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if files %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Filename</th>
+                                <th>Uploaded</th>
+                                <th>Status</th>
+                                <th>Downloads</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for file in files %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="brand-mark" style="width: 2.2rem; height: 2.2rem; border-radius: 0.9rem;">
+                                            <i class="fas fa-file-alt"></i>
+                                        </span>
+                                        <div>
+                                            <div class="fw-bold">{{ file.original_filename }}</div>
+                                            <div class="small text-muted">Record #{{ file.id }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td>
+                                    <span class="badge bg-{{ file.get_status_badge() }}">
+                                        {{ file.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="stat-pill-row">
+                                        <span class="stat-pill"><i class="fas fa-file"></i> {{ file.file_downloads }}</span>
+                                        <span class="stat-pill"><i class="fas fa-clock"></i> {{ file.timestamp_downloads }}</span>
+                                        <span class="stat-pill"><i class="fas fa-signature"></i> {{ file.signature_downloads }}</span>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group justify-content-center">
+                                        <a href="{{ url_for('main.download_file', file_id=file.id) }}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-download"></i> File
+                                        </a>
+                                        <a href="{{ url_for('main.download_timestamp', file_id=file.id) }}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-clock"></i> Timestamp
+                                        </a>
+                                        <a href="{{ url_for('main.download_signature', file_id=file.id) }}" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-signature"></i> Signature
+                                        </a>
+                                        <a href="{{ url_for('main.file_detail', file_id=file.id) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-circle-info"></i> Details
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-file-upload fa-2x"></i>
+                    <h3 class="section-title mb-2">No files uploaded yet</h3>
+                    <p class="page-subtitle mx-auto">Start by uploading your first document package. SecureStamp will keep its file, timestamp, and signature assets together.</p>
+                    <a href="{{ url_for('main.upload') }}" class="btn btn-primary mt-2">
+                        <i class="fas fa-upload"></i> Upload Your First File
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </section>
 </div>
-{% endblock %} 
+{% endblock %}

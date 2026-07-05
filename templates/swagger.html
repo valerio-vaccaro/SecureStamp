@@ -4,24 +4,23 @@
 
 {% block extra_head %}
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
-    <style>
-        .api-docs-shell {
-            background: #ffffff;
-            border-radius: 0.5rem;
-            padding: 1rem;
-        }
-
-        #swagger-ui {
-            background: #ffffff;
-            margin-bottom: 2rem;
-        }
-    </style>
 {% endblock %}
 
 {% block content %}
+<div class="section-stack">
+    <section class="hero-panel">
+        <div class="eyebrow">
+            <i class="fas fa-book-open"></i>
+            Reference
+        </div>
+        <h1 class="page-title">API documentation</h1>
+        <p class="page-subtitle">Browse the OpenAPI definition inside the same SecureStamp interface, with a clean white documentation surface for endpoint exploration.</p>
+    </section>
+
     <div class="api-docs-shell">
         <div id="swagger-ui"></div>
     </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}

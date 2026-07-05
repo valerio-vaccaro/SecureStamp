@@ -1,46 +1,64 @@
 {% extends "base.html" %}
 
-{% block content %}
-<div class="container mt-4">
-    <h1>Symbols Dashboard</h1>
-    
-    <div class="row mb-4">
-        <div class="col text-end">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createSymbolModal">
-                Create New Symbol
-            </button>
-        </div>
-    </div>
+{% block title %}Symbols{% endblock %}
 
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Description</th>
-                    <th>Created At</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="symbolsTableBody">
-                {% for symbol in symbols %}
-                <tr>
-                    <td>{{ symbol.id }}</td>
-                    <td>{{ symbol.name }}</td>
-                    <td>{{ symbol.description }}</td>
-                    <td>{{ symbol.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                    <td>
-                        <button class="btn btn-sm btn-danger delete-symbol" data-id="{{ symbol.id }}">Delete</button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+{% block content %}
+<div class="section-stack">
+    <section class="hero-panel">
+        <div class="toolbar">
+            <div>
+                <div class="eyebrow">
+                    <i class="fas fa-shapes"></i>
+                    Catalog
+                </div>
+                <h1 class="page-title">Symbols dashboard</h1>
+                <p class="page-subtitle">Manage the symbol catalog used in your workspace with the same operational layout as the rest of the application.</p>
+            </div>
+            <div>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createSymbolModal">
+                    <i class="fas fa-plus"></i> Create New Symbol
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="card-header">
+            <h2 class="section-title">Registered symbols</h2>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Created At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="symbolsTableBody">
+                        {% for symbol in symbols %}
+                        <tr>
+                            <td>{{ symbol.id }}</td>
+                            <td class="fw-bold">{{ symbol.name }}</td>
+                            <td>{{ symbol.description or '-' }}</td>
+                            <td>{{ symbol.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger delete-symbol" data-id="{{ symbol.id }}">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 </div>
 
-<!-- Create Symbol Modal -->
 <div class="modal fade" id="createSymbolModal">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -67,7 +85,10 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_scripts %}
+{{ super() }}
 <script>
 document.getElementById('createSymbolBtn').addEventListener('click', function() {
     const name = document.getElementById('symbolName').value;
@@ -93,22 +114,22 @@ document.getElementById('createSymbolBtn').addEventListener('click', function() 
         if (data.error) {
             alert(data.error);
         } else {
-            // Add new row to table
             const tbody = document.getElementById('symbolsTableBody');
             const newRow = `
                 <tr>
                     <td>${data.symbol.id}</td>
-                    <td>${data.symbol.name}</td>
-                    <td>${data.symbol.description}</td>
+                    <td class="fw-bold">${data.symbol.name}</td>
+                    <td>${data.symbol.description || '-'}</td>
                     <td>${data.symbol.created_at}</td>
                     <td>
-                        <button class="btn btn-sm btn-danger delete-symbol" data-id="${data.symbol.id}">Delete</button>
+                        <button class="btn btn-sm btn-danger delete-symbol" data-id="${data.symbol.id}">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
                     </td>
                 </tr>
             `;
             tbody.insertAdjacentHTML('afterbegin', newRow);
-            
-            // Close modal and reset form
+
             const modal = bootstrap.Modal.getInstance(document.getElementById('createSymbolModal'));
             modal.hide();
             document.getElementById('symbolForm').reset();
@@ -120,29 +141,31 @@ document.getElementById('createSymbolBtn').addEventListener('click', function() 
     });
 });
 
-// Delete symbol functionality
 document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('delete-symbol')) {
-        if (confirm('Are you sure you want to delete this symbol?')) {
-            const symbolId = e.target.dataset.id;
-            const row = e.target.closest('tr');
-            
-            fetch(`/api/symbols/${symbolId}`, {
-                method: 'DELETE'
-            })
-            .then(response => {
-                if (response.ok) {
-                    row.remove();
-                } else {
-                    alert('Failed to delete symbol');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while deleting the symbol');
-            });
-        }
+    const deleteButton = e.target.closest('.delete-symbol');
+    if (!deleteButton) {
+        return;
+    }
+
+    if (confirm('Are you sure you want to delete this symbol?')) {
+        const symbolId = deleteButton.dataset.id;
+        const row = deleteButton.closest('tr');
+
+        fetch(`/api/symbols/${symbolId}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                row.remove();
+            } else {
+                alert('Failed to delete symbol');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the symbol');
+        });
     }
 });
 </script>
-{% endblock %} 
+{% endblock %}

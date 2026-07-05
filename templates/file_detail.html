@@ -3,117 +3,95 @@
 {% block title %}File Details{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card shadow-sm">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h3 class="card-title mb-0">
-                    <i class="fas fa-file-alt"></i> File Details
-                </h3>
+<div class="section-stack">
+    <section class="hero-panel">
+        <div class="toolbar">
+            <div>
+                <div class="eyebrow">
+                    <i class="fas fa-file-shield"></i>
+                    File Record
+                </div>
+                <h1 class="page-title">{{ file.original_filename }}</h1>
+                <p class="page-subtitle">Review metadata, verification identifiers, and export actions for this stored document package.</p>
+            </div>
+            <div>
                 <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i> Back to Dashboard
                 </a>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="table-responsive">
-                            <table class="table">
-                                <tbody>
-                                    <tr>
-                                        <th style="width: 200px;">Filename</th>
-                                        <td>
-                                            <i class="fas fa-file me-2"></i>
-                                            {{ file.original_filename }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>Upload Date</th>
-                                        <td>
-                                            <i class="fas fa-calendar me-2"></i>
-                                            {{ file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>Status</th>
-                                        <td>
-                                            <span class="badge bg-{{ file.get_status_badge() }}">
-                                                {{ file.status }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>File ID</th>
-                                        <td>
-                                            <i class="fas fa-hashtag me-2"></i>
-                                            {{ file.id }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>Owner</th>
-                                        <td>
-                                            <i class="fas fa-user me-2"></i>
-                                            {{ current_user.username }}
-                                        </td>
-                                    </tr>
-                                    {% if file_hash %}
-                                    <tr>
-                                        <th>SHA256 Hash</th>
-                                        <td>
-                                            <i class="fas fa-fingerprint me-2"></i>
-                                            <code class="user-select-all">{{ file_hash }}</code>
-                                        </td>
-                                    </tr>
-                                    {% endif %}
-                                    <tr>
-                                        <th>Download Statistics</th>
-                                        <td>
-                                            <div class="d-flex gap-4">
-                                                <div>
-                                                    <i class="fas fa-file me-2"></i>
-                                                    File: {{ file.file_downloads }}
-                                                </div>
-                                                <div>
-                                                    <i class="fas fa-clock me-2"></i>
-                                                    Timestamp: {{ file.timestamp_downloads }}
-                                                </div>
-                                                <div>
-                                                    <i class="fas fa-signature me-2"></i>
-                                                    Signature: {{ file.signature_downloads }}
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+        </div>
+    </section>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <section class="card h-100">
+                <div class="card-header">
+                    <h2 class="section-title">Metadata</h2>
+                </div>
+                <div class="card-body">
+                    <div class="detail-list">
+                        <div class="detail-item">
+                            <div class="detail-label">Filename</div>
+                            <div class="detail-value"><i class="fas fa-file me-2"></i>{{ file.original_filename }}</div>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="card-title mb-0">Actions</h5>
+                        <div class="detail-item">
+                            <div class="detail-label">Upload Date</div>
+                            <div class="detail-value"><i class="fas fa-calendar me-2"></i>{{ file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Status</div>
+                            <div class="detail-value">
+                                <span class="badge bg-{{ file.get_status_badge() }}">{{ file.status }}</span>
                             </div>
-                            <div class="card-body">
-                                <div class="d-grid gap-2">
-                                    <a href="{{ url_for('main.download_file', file_id=file.id) }}" 
-                                       class="btn btn-success">
-                                        <i class="fas fa-download"></i> Download File
-                                    </a>
-                                    <a href="{{ url_for('main.download_timestamp', file_id=file.id) }}" 
-                                       class="btn btn-warning">
-                                        <i class="fas fa-clock"></i> Download Timestamp
-                                    </a>
-                                    <a href="{{ url_for('main.download_signature', file_id=file.id) }}" 
-                                       class="btn btn-primary">
-                                        <i class="fas fa-signature"></i> Download Signature
-                                    </a>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">File ID</div>
+                            <div class="detail-value"><i class="fas fa-hashtag me-2"></i>{{ file.id }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Owner</div>
+                            <div class="detail-value"><i class="fas fa-user me-2"></i>{{ current_user.username }}</div>
+                        </div>
+                        {% if file_hash %}
+                        <div class="detail-item">
+                            <div class="detail-label">SHA256 Hash</div>
+                            <div class="detail-value"><code class="user-select-all">{{ file_hash }}</code></div>
+                        </div>
+                        {% endif %}
+                        <div class="detail-item">
+                            <div class="detail-label">Download Activity</div>
+                            <div class="detail-value">
+                                <div class="stat-pill-row">
+                                    <span class="stat-pill"><i class="fas fa-file"></i> File: {{ file.file_downloads }}</span>
+                                    <span class="stat-pill"><i class="fas fa-clock"></i> Timestamp: {{ file.timestamp_downloads }}</span>
+                                    <span class="stat-pill"><i class="fas fa-signature"></i> Signature: {{ file.signature_downloads }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
+        </div>
+        <div class="col-lg-4">
+            <section class="card h-100">
+                <div class="card-header">
+                    <h2 class="section-title">Actions</h2>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('main.download_file', file_id=file.id) }}" class="btn btn-success">
+                            <i class="fas fa-download"></i> Download File
+                        </a>
+                        <a href="{{ url_for('main.download_timestamp', file_id=file.id) }}" class="btn btn-warning">
+                            <i class="fas fa-clock"></i> Download Timestamp
+                        </a>
+                        <a href="{{ url_for('main.download_signature', file_id=file.id) }}" class="btn btn-primary">
+                            <i class="fas fa-signature"></i> Download Signature
+                        </a>
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}
