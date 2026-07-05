@@ -1,19 +1,33 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>SecureStamp API Documentation</title>
+{% extends "base.html" %}
+
+{% block title %}API Documentation{% endblock %}
+
+{% block extra_head %}
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
     <style>
-        body { margin: 0; }
+        .api-docs-shell {
+            background: #ffffff;
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+
+        #swagger-ui {
+            background: #ffffff;
+            margin-bottom: 2rem;
+        }
     </style>
-</head>
-<body>
-    <div id="swagger-ui"></div>
+{% endblock %}
+
+{% block content %}
+    <div class="api-docs-shell">
+        <div id="swagger-ui"></div>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
     <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
     <script>
-        window.onload = function () {
+        window.addEventListener('load', function () {
             SwaggerUIBundle({
                 url: "{{ url_for('static', filename='openapi.json') }}",
                 dom_id: '#swagger-ui',
@@ -21,7 +35,6 @@
                 deepLinking: true,
                 withCredentials: true
             });
-        };
+        });
     </script>
-</body>
-</html>
+{% endblock %}
