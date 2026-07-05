@@ -74,9 +74,9 @@ def build_timestamp_completion_email(file, user):
         file_hash=calculate_file_hash(file.file_path),
         file_size=get_file_size_string(file),
         confirmed_at=confirmed_at,
-        file_download_url=build_platform_link(base_url, f"/download/{file.id}"),
-        timestamp_download_url=build_platform_link(base_url, f"/download/timestamp/{file.id}"),
-        file_detail_url=build_platform_link(base_url, f"/files/{file.id}"),
+        file_download_url=build_platform_link(base_url, f"/download/{file.storage_key}"),
+        timestamp_download_url=build_platform_link(base_url, f"/download/timestamp/{file.storage_key}"),
+        file_detail_url=build_platform_link(base_url, f"/files/{file.storage_key}"),
         platform_login_url=build_platform_link(base_url, "/login"),
     )
 
@@ -106,7 +106,7 @@ def list_files():
             ots_exists = "✓" if os.path.exists(f"{file.file_path}.ots") else "✗"
 
             table_data.append([
-                file.id,
+                file.storage_key,
                 file.original_filename,
                 user.username,
                 file.uploaded_at.strftime("%Y-%m-%d %H:%M:%S"),
@@ -117,7 +117,7 @@ def list_files():
             ])
 
         # Print table
-        headers = ["ID", "Filename", "Owner", "Upload Date", "Size", "Status", "Signature", "Timestamp"]
+        headers = ["UUID", "Filename", "Owner", "Upload Date", "Size", "Status", "Signature", "Timestamp"]
         print("\nFile Database Contents:")
         print(tabulate(table_data, headers=headers, tablefmt="grid"))
 

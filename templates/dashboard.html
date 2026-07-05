@@ -86,7 +86,7 @@
                                         <div class="dashboard-file-content">
                                             <div class="dashboard-file-name">{{ file.original_filename }}</div>
                                             <div class="dashboard-file-meta">
-                                                <span>ID {{ file.id }}</span>
+                                                <span>UUID {{ file.storage_key[:8] }}</span>
                                                 <span>{{ file.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</span>
                                                 <code>{{ file.storage_key[:8] }}</code>
                                             </div>
@@ -107,16 +107,16 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-compact justify-content-center">
-                                        <a href="{{ url_for('main.download_file', file_id=file.id) }}" class="btn btn-sm btn-success" title="Download file" aria-label="Download file">
+                                        <a href="{{ url_for('main.download_file', file_ref=file.storage_key) }}" class="btn btn-sm btn-success" title="Download file" aria-label="Download file">
                                             <i class="fas fa-download"></i>
                                         </a>
-                                        <a href="{{ url_for('main.download_timestamp', file_id=file.id) }}" class="btn btn-sm btn-warning" title="Download timestamp" aria-label="Download timestamp">
+                                        <a href="{{ url_for('main.download_timestamp', file_ref=file.storage_key) }}" class="btn btn-sm btn-warning" title="Download timestamp" aria-label="Download timestamp">
                                             <i class="fas fa-clock"></i>
                                         </a>
-                                        <a href="{{ url_for('main.download_signature', file_id=file.id) }}" class="btn btn-sm btn-primary" title="Download signature" aria-label="Download signature">
+                                        <a href="{{ url_for('main.download_signature', file_ref=file.storage_key) }}" class="btn btn-sm btn-primary" title="Download signature" aria-label="Download signature">
                                             <i class="fas fa-signature"></i>
                                         </a>
-                                        <a href="{{ url_for('main.file_detail', file_id=file.id) }}" class="btn btn-sm btn-info" title="View details" aria-label="View details">
+                                        <a href="{{ url_for('main.file_detail', file_ref=file.storage_key) }}" class="btn btn-sm btn-info" title="View details" aria-label="View details">
                                             <i class="fas fa-circle-info"></i>
                                         </a>
                                     </div>

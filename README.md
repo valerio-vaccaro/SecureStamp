@@ -139,13 +139,13 @@ Possible file statuses:
   - Returns: Success message or error
 - 📂 `GET /files`: List user's files
   - Returns: All files belonging to the current user
-- 🔍 `GET /files/<int:file_id>`: View file details
+- 🔍 `GET /files/<file_uuid>`: View file details
   - Returns: File information including SHA-256 hash
-- ⬇️ `GET /download/<int:file_id>`: Download original file
+- ⬇️ `GET /download/<file_uuid>`: Download original file
   - Returns: File download
-- ⏱️ `GET /download/timestamp/<int:file_id>`: Download timestamp file
+- ⏱️ `GET /download/timestamp/<file_uuid>`: Download timestamp file
   - Returns: .ots file download
-- ✍️ `GET /download/signature/<int:file_id>`: Download signature file
+- ✍️ `GET /download/signature/<file_uuid>`: Download signature file
   - Returns: .sig file download
 
 ### Security

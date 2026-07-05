@@ -49,16 +49,16 @@ class SecureStampTokenClient:
             for handle in opened:
                 handle.close()
 
-    def download_file(self, file_id: int, output_path: str | None = None):
-        response = self.session.get(self._url(f"/api/files/{file_id}/download"), stream=True)
+    def download_file(self, file_uuid: str, output_path: str | None = None):
+        response = self.session.get(self._url(f"/api/files/{file_uuid}/download"), stream=True)
         return self._save_binary_response(response, output_path)
 
-    def download_timestamp(self, file_id: int, output_path: str | None = None):
-        response = self.session.get(self._url(f"/api/files/{file_id}/timestamp"), stream=True)
+    def download_timestamp(self, file_uuid: str, output_path: str | None = None):
+        response = self.session.get(self._url(f"/api/files/{file_uuid}/timestamp"), stream=True)
         return self._save_binary_response(response, output_path)
 
-    def download_signature(self, file_id: int, output_path: str | None = None):
-        response = self.session.get(self._url(f"/api/files/{file_id}/signature"), stream=True)
+    def download_signature(self, file_uuid: str, output_path: str | None = None):
+        response = self.session.get(self._url(f"/api/files/{file_uuid}/signature"), stream=True)
         return self._save_binary_response(response, output_path)
 
     def create_symbol(self, name: str, description: str):
@@ -114,15 +114,15 @@ def build_parser():
     upload.add_argument("files", nargs="+", help="File paths to upload")
 
     download_file = subparsers.add_parser("download-file", help="Download original file")
-    download_file.add_argument("file_id", type=int)
+    download_file.add_argument("file_uuid")
     download_file.add_argument("--output", help="Output path")
 
     download_timestamp = subparsers.add_parser("download-timestamp", help="Download timestamp proof")
-    download_timestamp.add_argument("file_id", type=int)
+    download_timestamp.add_argument("file_uuid")
     download_timestamp.add_argument("--output", help="Output path")
 
     download_signature = subparsers.add_parser("download-signature", help="Download signature")
-    download_signature.add_argument("file_id", type=int)
+    download_signature.add_argument("file_uuid")
     download_signature.add_argument("--output", help="Output path")
 
     create_symbol = subparsers.add_parser("create-symbol", help="Create a symbol")
@@ -145,11 +145,11 @@ def main():
     elif args.command == "upload-files":
         print_result(*client.upload_files(args.files))
     elif args.command == "download-file":
-        print_result(*client.download_file(args.file_id, args.output))
+        print_result(*client.download_file(args.file_uuid, args.output))
     elif args.command == "download-timestamp":
-        print_result(*client.download_timestamp(args.file_id, args.output))
+        print_result(*client.download_timestamp(args.file_uuid, args.output))
     elif args.command == "download-signature":
-        print_result(*client.download_signature(args.file_id, args.output))
+        print_result(*client.download_signature(args.file_uuid, args.output))
     elif args.command == "create-symbol":
         print_result(*client.create_symbol(args.name, args.description))
     elif args.command == "delete-symbol":

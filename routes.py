@@ -9,6 +9,7 @@ from app import db
 import subprocess
 import uuid
 import hashlib
+import os
 from datetime import datetime
 
 auth_bp = Blueprint('auth', __name__)
@@ -53,7 +54,7 @@ def extract_bearer_token():
 
 def build_file_payload(file):
     return {
-        'id': file.id,
+        'file_uuid': file.storage_key,
         'filename': file.filename,
         'original_filename': file.original_filename,
         'uploaded_at': file.uploaded_at.isoformat(),
@@ -77,6 +78,14 @@ def build_public_service_stats():
             )
         ).scalar(),
     }
+
+
+def get_file_by_reference(file_ref):
+    extension = os.path.splitext(file_ref)[1]
+    if extension:
+        return File.query.filter_by(filename=file_ref).first()
+
+    return File.query.filter(File.filename.like(f"{file_ref}.%")).first()
 
 
 def resolve_api_user():
@@ -165,7 +174,11 @@ def process_uploaded_files(uploaded_file_objects, user):
                 status='Timestamp requested'
             )
             db.session.add(new_file)
-            uploaded_files.append({'name': filename, 'status': 'success'})
+            uploaded_files.append({
+                'file_uuid': new_file.storage_key,
+                'name': filename,
+                'status': 'success',
+            })
 
     db.session.commit()
     return uploaded_files
@@ -430,10 +443,12 @@ def files():
     user_files = File.query.filter_by(user_id=current_user.id).all()
     return render_template('files.html', files=user_files)
 
-@main_bp.route('/files/<int:file_id>')
+@main_bp.route('/files/<file_ref>')
 @login_required
-def file_detail(file_id):
-    file = File.query.get_or_404(file_id)
+def file_detail(file_ref):
+    file = get_file_by_reference(file_ref)
+    if not file:
+        abort(404)
     if file.user_id != current_user.id:
         flash('Unauthorized access', 'error')
         return redirect(url_for('main.dashboard'))
@@ -471,12 +486,14 @@ def api_upload_files():
     return jsonify({'files': uploaded_files})
 
 
-@main_bp.route('/api/files/<int:file_id>/download', methods=['GET'])
+@main_bp.route('/api/files/<file_ref>/download', methods=['GET'])
 @api_auth_required
 @token_permission_required('can_download_files', 'This token cannot download original files.')
-def api_download_file(file_id):
+def api_download_file(file_ref):
     user = get_request_user()
-    file = File.query.get_or_404(file_id)
+    file = get_file_by_reference(file_ref)
+    if not file:
+        abort(404)
     if file.user_id != user.id:
         return jsonify({'error': 'Forbidden'}), 403
 
@@ -488,12 +505,14 @@ def api_download_file(file_id):
         return jsonify({'error': 'File not found'}), 404
 
 
-@main_bp.route('/api/files/<int:file_id>/timestamp', methods=['GET'])
+@main_bp.route('/api/files/<file_ref>/timestamp', methods=['GET'])
 @api_auth_required
 @token_permission_required('can_download_timestamps', 'This token cannot download timestamp proofs.')
-def api_download_timestamp(file_id):
+def api_download_timestamp(file_ref):
     user = get_request_user()
-    file = File.query.get_or_404(file_id)
+    file = get_file_by_reference(file_ref)
+    if not file:
+        abort(404)
     if file.user_id != user.id:
         return jsonify({'error': 'Forbidden'}), 403
 
@@ -505,12 +524,14 @@ def api_download_timestamp(file_id):
         return jsonify({'error': 'File not found'}), 404
 
 
-@main_bp.route('/api/files/<int:file_id>/signature', methods=['GET'])
+@main_bp.route('/api/files/<file_ref>/signature', methods=['GET'])
 @api_auth_required
 @token_permission_required('can_download_signatures', 'This token cannot download signatures.')
-def api_download_signature(file_id):
+def api_download_signature(file_ref):
     user = get_request_user()
-    file = File.query.get_or_404(file_id)
+    file = get_file_by_reference(file_ref)
+    if not file:
+        abort(404)
     if file.user_id != user.id:
         return jsonify({'error': 'Forbidden'}), 403
 
@@ -521,10 +542,12 @@ def api_download_signature(file_id):
     except FileNotFoundError:
         return jsonify({'error': 'File not found'}), 404
 
-@main_bp.route('/download/<int:file_id>')
+@main_bp.route('/download/<file_ref>')
 @login_required
-def download_file(file_id):
-    file = File.query.get_or_404(file_id)
+def download_file(file_ref):
+    file = get_file_by_reference(file_ref)
+    if not file:
+        abort(404)
     if file.user_id != current_user.id:
         abort(403)
     
@@ -542,10 +565,12 @@ def download_file(file_id):
         flash('File not found', 'error')
         return redirect(url_for('main.dashboard'))
 
-@main_bp.route('/download/timestamp/<int:file_id>')
+@main_bp.route('/download/timestamp/<file_ref>')
 @login_required
-def download_timestamp(file_id):
-    file = File.query.get_or_404(file_id)
+def download_timestamp(file_ref):
+    file = get_file_by_reference(file_ref)
+    if not file:
+        abort(404)
     if file.user_id != current_user.id:
         abort(403)
 
@@ -563,10 +588,12 @@ def download_timestamp(file_id):
         flash('File not found', 'error')
         return redirect(url_for('main.dashboard'))
 
-@main_bp.route('/download/signature/<int:file_id>')
+@main_bp.route('/download/signature/<file_ref>')
 @login_required
-def download_signature(file_id):
-    file = File.query.get_or_404(file_id)
+def download_signature(file_ref):
+    file = get_file_by_reference(file_ref)
+    if not file:
+        abort(404)
     if file.user_id != current_user.id:
         abort(403)
 

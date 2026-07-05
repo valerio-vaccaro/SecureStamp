@@ -26,6 +26,8 @@ curl -H "Authorization: Bearer $TOKEN" \
   "$BASE_URL/api/files"
 ```
 
+The response returns `file_uuid` for each file. Use that UUID in all file download endpoints below.
+
 ## Upload Files
 
 ```bash
@@ -41,7 +43,7 @@ curl -X POST \
 ```bash
 curl -L \
   -H "Authorization: Bearer $TOKEN" \
-  "$BASE_URL/api/files/FILE_ID/download" \
+  "$BASE_URL/api/files/FILE_UUID/download" \
   -o downloaded-file.bin
 ```
 
@@ -50,7 +52,7 @@ curl -L \
 ```bash
 curl -L \
   -H "Authorization: Bearer $TOKEN" \
-  "$BASE_URL/api/files/FILE_ID/timestamp" \
+  "$BASE_URL/api/files/FILE_UUID/timestamp" \
   -o proof.ots
 ```
 
@@ -59,7 +61,7 @@ curl -L \
 ```bash
 curl -L \
   -H "Authorization: Bearer $TOKEN" \
-  "$BASE_URL/api/files/FILE_ID/signature" \
+  "$BASE_URL/api/files/FILE_UUID/signature" \
   -o signature.sig
 ```
 
