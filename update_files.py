@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import os
 import subprocess
+import hashlib
 from datetime import datetime
 
+from flask import render_template
 from flask_mail import Message
 
 from app import create_app, db, mail
@@ -26,32 +28,57 @@ def get_file_size_string(file):
         return "N/A"
 
 
+def calculate_file_hash(file_path):
+    sha256 = hashlib.sha256()
+    try:
+        with open(file_path, 'rb') as handle:
+            for chunk in iter(lambda: handle.read(8192), b''):
+                sha256.update(chunk)
+    except OSError:
+        return None
+    return sha256.hexdigest()
+
+
+def normalize_base_url(raw_url):
+    if not raw_url:
+        return None
+    raw_url = raw_url.strip()
+    if not raw_url:
+        return None
+    if not raw_url.startswith(('http://', 'https://')):
+        raw_url = f"https://{raw_url}"
+    return raw_url.rstrip('/')
+
+
+def get_public_base_url():
+    app = create_app()
+    with app.app_context():
+        return normalize_base_url(
+            app.config.get('PUBLIC_BASE_URL') or app.config.get('ONION_URL')
+        )
+
+
+def build_platform_link(base_url, path):
+    if not base_url:
+        return None
+    return f"{base_url}{path}"
+
+
 def build_timestamp_completion_email(file, user):
-    timestamp_path = f"{file.file_path}.ots"
-    signature_path = f"{file.file_path}.sig"
-    stats = [
-        f"File name: {file.original_filename}",
-        f"File ID: {file.id}",
-        f"Status: {file.status}",
-        f"Uploaded at (UTC): {file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S')}",
-        f"Confirmed at (UTC): {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}",
-        f"File size: {get_file_size_string(file)}",
-        f"Original file downloads: {file.file_downloads}",
-        f"Timestamp proof downloads: {file.timestamp_downloads}",
-        f"Signature downloads: {file.signature_downloads}",
-        f"Timestamp proof present: {'Yes' if os.path.exists(timestamp_path) else 'No'}",
-        f"Signature present: {'Yes' if os.path.exists(signature_path) else 'No'}",
-    ]
-    body = [
-        f"Hello {user.username},",
-        "",
-        "SecureStamp has confirmed a timestamp for one of your files.",
-        "",
-        *stats,
-        "",
-        "This notification was generated because email notifications are enabled on your account.",
-    ]
-    return "\n".join(body)
+    confirmed_at = datetime.utcnow()
+    base_url = get_public_base_url()
+    return render_template(
+        'emails/timestamp_completed.html',
+        user=user,
+        file=file,
+        file_hash=calculate_file_hash(file.file_path),
+        file_size=get_file_size_string(file),
+        confirmed_at=confirmed_at,
+        file_download_url=build_platform_link(base_url, f"/download/{file.id}"),
+        timestamp_download_url=build_platform_link(base_url, f"/download/timestamp/{file.id}"),
+        file_detail_url=build_platform_link(base_url, f"/files/{file.id}"),
+        platform_login_url=build_platform_link(base_url, "/login"),
+    )
 
 
 def smtp_configured(app):
@@ -134,9 +161,9 @@ def update_files():
                         db.session.commit()
 
                         if user.email_notifications and mail_enabled:
-                            subject = "SecureStamp: Timestamp Completed"
-                            body = build_timestamp_completion_email(file, user)
-                            send_email(user.email, subject, body)
+                            subject = f"SecureStamp: Timestamp Completed {file.original_filename}"
+                            html_body = build_timestamp_completion_email(file, user)
+                            send_email(user.email, subject, html_body)
                             print(f"Notification email sent to {user.email}")
                         elif user.email_notifications:
                             print(f"Email notification skipped for {user.email}: SMTP is not configured")
@@ -145,13 +172,13 @@ def update_files():
                 else:
                     print(result.stdout.decode('utf-8'))
 
-def send_email(recipient, subject, body):
+def send_email(recipient, subject, html_body):
     app = create_app()
     with app.app_context():
         msg = Message(
             subject=subject,
             recipients=[recipient],
-            body=body
+            html=html_body
         )
         mail.send(msg)
 

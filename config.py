@@ -22,6 +22,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size 
+    PUBLIC_BASE_URL = os.getenv('PUBLIC_BASE_URL')
     ONION_URL = os.getenv('ONION_URL')
     GPG_USER = os.getenv('GPG_USER', 'not-valid-key')
     MAIL_SERVER = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
