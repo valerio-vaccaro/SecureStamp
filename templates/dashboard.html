@@ -25,25 +25,25 @@
             </div>
         </div>
         <div class="metric-grid">
-            <div class="metric-card">
+            <div class="metric-card metric-card-compact">
                 <div class="metric-label">Stored Files</div>
                 <div class="metric-value">{{ files|length }}</div>
-                <div class="metric-note">Active records in your vault</div>
+                <div class="metric-note">Vault records</div>
             </div>
-            <div class="metric-card">
+            <div class="metric-card metric-card-compact">
                 <div class="metric-label">File Downloads</div>
                 <div class="metric-value">{{ total_file_downloads }}</div>
-                <div class="metric-note">Direct file retrievals</div>
+                <div class="metric-note">Original files</div>
             </div>
-            <div class="metric-card">
+            <div class="metric-card metric-card-compact">
                 <div class="metric-label">Timestamp Downloads</div>
                 <div class="metric-value">{{ total_timestamp_downloads }}</div>
-                <div class="metric-note">Verification packages served</div>
+                <div class="metric-note">Proof packages</div>
             </div>
-            <div class="metric-card">
+            <div class="metric-card metric-card-compact">
                 <div class="metric-label">Signature Downloads</div>
                 <div class="metric-value">{{ total_signature_downloads }}</div>
-                <div class="metric-note">Signature bundles exported</div>
+                <div class="metric-note">Signature exports</div>
             </div>
         </div>
     </section>
@@ -65,12 +65,11 @@
         </div>
         <div class="card-body">
             {% if files %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
+                <div class="table-responsive dashboard-table-wrap">
+                    <table class="table table-hover dashboard-table">
                         <thead>
                             <tr>
                                 <th>Filename</th>
-                                <th>Uploaded</th>
                                 <th>Status</th>
                                 <th>Downloads</th>
                                 <th class="text-center">Actions</th>
@@ -80,42 +79,45 @@
                             {% for file in files %}
                             <tr>
                                 <td>
-                                    <div class="d-flex align-items-center gap-3">
-                                        <span class="brand-mark" style="width: 2.2rem; height: 2.2rem; border-radius: 0.9rem;">
+                                    <div class="dashboard-file-cell">
+                                        <span class="brand-mark dashboard-file-icon">
                                             <i class="fas fa-file-alt"></i>
                                         </span>
-                                        <div>
-                                            <div class="fw-bold">{{ file.original_filename }}</div>
-                                            <div class="small text-muted">Record #{{ file.id }}</div>
+                                        <div class="dashboard-file-content">
+                                            <div class="dashboard-file-name">{{ file.original_filename }}</div>
+                                            <div class="dashboard-file-meta">
+                                                <span>ID {{ file.id }}</span>
+                                                <span>{{ file.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                                                <code>{{ file.storage_key[:8] }}</code>
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
-                                <td>{{ file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                                 <td>
                                     <span class="badge bg-{{ file.get_status_badge() }}">
                                         {{ file.status }}
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="stat-pill-row">
+                                    <div class="stat-pill-row stat-pill-row-compact">
                                         <span class="stat-pill"><i class="fas fa-file"></i> {{ file.file_downloads }}</span>
                                         <span class="stat-pill"><i class="fas fa-clock"></i> {{ file.timestamp_downloads }}</span>
                                         <span class="stat-pill"><i class="fas fa-signature"></i> {{ file.signature_downloads }}</span>
                                     </div>
                                 </td>
                                 <td class="text-center">
-                                    <div class="btn-group justify-content-center">
-                                        <a href="{{ url_for('main.download_file', file_id=file.id) }}" class="btn btn-sm btn-success">
-                                            <i class="fas fa-download"></i> File
+                                    <div class="btn-group btn-group-compact justify-content-center">
+                                        <a href="{{ url_for('main.download_file', file_id=file.id) }}" class="btn btn-sm btn-success" title="Download file" aria-label="Download file">
+                                            <i class="fas fa-download"></i>
                                         </a>
-                                        <a href="{{ url_for('main.download_timestamp', file_id=file.id) }}" class="btn btn-sm btn-warning">
-                                            <i class="fas fa-clock"></i> Timestamp
+                                        <a href="{{ url_for('main.download_timestamp', file_id=file.id) }}" class="btn btn-sm btn-warning" title="Download timestamp" aria-label="Download timestamp">
+                                            <i class="fas fa-clock"></i>
                                         </a>
-                                        <a href="{{ url_for('main.download_signature', file_id=file.id) }}" class="btn btn-sm btn-primary">
-                                            <i class="fas fa-signature"></i> Signature
+                                        <a href="{{ url_for('main.download_signature', file_id=file.id) }}" class="btn btn-sm btn-primary" title="Download signature" aria-label="Download signature">
+                                            <i class="fas fa-signature"></i>
                                         </a>
-                                        <a href="{{ url_for('main.file_detail', file_id=file.id) }}" class="btn btn-sm btn-info">
-                                            <i class="fas fa-circle-info"></i> Details
+                                        <a href="{{ url_for('main.file_detail', file_id=file.id) }}" class="btn btn-sm btn-info" title="View details" aria-label="View details">
+                                            <i class="fas fa-circle-info"></i>
                                         </a>
                                     </div>
                                 </td>

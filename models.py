@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -48,6 +49,10 @@ class File(db.Model):
             'Error': 'danger'
         }
         return status_classes.get(self.status, 'secondary')
+
+    @property
+    def storage_key(self):
+        return os.path.splitext(self.filename)[0]
 
 class Symbol(db.Model):
     __tablename__ = 'symbols'

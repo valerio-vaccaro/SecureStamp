@@ -277,6 +277,10 @@ a:hover {
     background: rgba(255, 255, 255, 0.9);
 }
 
+.metric-card-compact {
+    padding: 1rem 1.05rem;
+}
+
 .metric-label {
     margin-bottom: 0.4rem;
     color: var(--text-soft);
@@ -400,6 +404,20 @@ a:hover {
     padding: 0.62rem 0.95rem;
 }
 
+.btn-group-compact {
+    gap: 0.35rem;
+}
+
+.btn-group-compact .btn {
+    min-width: 2.3rem;
+    min-height: 2.3rem;
+    padding: 0.45rem;
+}
+
+.btn-group-compact .btn i {
+    margin-right: 0;
+}
+
 .form-label {
     margin-bottom: 0.55rem;
     color: var(--text-main);
@@ -463,6 +481,64 @@ textarea.form-control {
     background: rgba(28, 108, 243, 0.03);
 }
 
+.dashboard-table-wrap {
+    overflow-x: auto;
+}
+
+.dashboard-table > :not(caption) > * > * {
+    padding-top: 0.8rem;
+    padding-bottom: 0.8rem;
+}
+
+.dashboard-file-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    min-width: 0;
+}
+
+.dashboard-file-icon {
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 0.9rem;
+    flex: 0 0 auto;
+}
+
+.dashboard-file-content {
+    min-width: 0;
+}
+
+.dashboard-file-name {
+    font-weight: 700;
+    line-height: 1.2;
+    word-break: break-word;
+}
+
+.dashboard-file-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-top: 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.dashboard-file-meta code {
+    padding: 0.08rem 0.35rem;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.06);
+    color: var(--text-soft);
+}
+
+.stat-pill-row-compact {
+    gap: 0.35rem;
+}
+
+.stat-pill-row-compact .stat-pill {
+    padding: 0.35rem 0.55rem;
+    font-size: 0.78rem;
+}
+
 .badge {
     padding: 0.5rem 0.78rem;
     border-radius: 999px;
@@ -501,6 +577,32 @@ textarea.form-control {
     border-radius: 1.4rem;
     background: rgba(28, 108, 243, 0.08);
     color: var(--primary);
+}
+
+@media (max-width: 991.98px) {
+    .dashboard-table thead {
+        display: none;
+    }
+
+    .dashboard-table,
+    .dashboard-table tbody,
+    .dashboard-table tr,
+    .dashboard-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .dashboard-table tbody tr + tr {
+        border-top: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    .dashboard-table td {
+        border-bottom: 0;
+    }
+
+    .dashboard-table td:last-child {
+        padding-top: 0;
+    }
 }
 
 .detail-list {

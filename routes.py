@@ -146,7 +146,8 @@ def process_uploaded_files(uploaded_file_objects, user):
 
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            unique_filename = f"{uuid.uuid4()}_{filename}"
+            extension = os.path.splitext(filename)[1].lower()
+            unique_filename = f"{uuid.uuid4()}{extension}"
             file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
             file.save(file_path)
 
