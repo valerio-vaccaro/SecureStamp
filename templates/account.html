@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Account Settings{% endblock %}
+
+{% block content %}
+<div class="section-stack">
+    <section class="hero-panel">
+        <div class="eyebrow">
+            <i class="fas fa-user-gear"></i>
+            Account
+        </div>
+        <h1 class="page-title">Account settings</h1>
+        <p class="page-subtitle">Update your email address, rotate your password, and control whether SecureStamp sends timestamp completion notifications.</p>
+    </section>
+
+    <section class="card">
+        <div class="card-header">
+            <h2 class="section-title">Profile and security</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <label for="email" class="form-label">Email address</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
+                    </div>
+                    <div class="col-lg-6 d-flex align-items-end">
+                        <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications" {% if current_user.email_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="email_notifications">Email notifications enabled</label>
+                            <div class="form-text">Enabled by default for timestamp completion updates.</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <hr>
+                    </div>
+                    <div class="col-lg-4">
+                        <label for="current_password" class="form-label">Current password</label>
+                        <input type="password" class="form-control" id="current_password" name="current_password">
+                        <div class="form-text">Required when changing your email or password.</div>
+                    </div>
+                    <div class="col-lg-4">
+                        <label for="new_password" class="form-label">New password</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password">
+                    </div>
+                    <div class="col-lg-4">
+                        <label for="confirm_password" class="form-label">Confirm new password</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                        <div class="form-text">Leave password fields empty to keep your current password.</div>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex flex-wrap gap-3">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </form>
+        </div>
+    </section>
+</div>
+{% endblock %}

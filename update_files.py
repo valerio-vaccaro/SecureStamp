@@ -86,11 +86,13 @@ def update_files():
                         file.status = 'Timestamp completed'
                         db.session.commit()
                         
-                        # Send email notification to user
-                        subject = "SecureStamp: Timestamp Completed"
-                        body = f"Your file '{file.original_filename}' has been successfully timestamped."
-                        send_email(user.email, subject, body)
-                        print(f"Notification email sent to {user.email}")
+                        if user.email_notifications:
+                            subject = "SecureStamp: Timestamp Completed"
+                            body = f"Your file '{file.original_filename}' has been successfully timestamped."
+                            send_email(user.email, subject, body)
+                            print(f"Notification email sent to {user.email}")
+                        else:
+                            print(f"Email notification skipped for {user.email}")
 
 def send_email(recipient, subject, body):
     with create_app().app_context():

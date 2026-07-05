@@ -25,7 +25,12 @@ def register():
             flash('Username already exists')
             return redirect(url_for('auth.register'))
 
-        user = User(username=username, email=email)
+        existing_email = User.query.filter_by(email=email).first()
+        if existing_email:
+            flash('Email already exists', 'error')
+            return redirect(url_for('auth.register'))
+
+        user = User(username=username, email=email, email_notifications=True)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
@@ -117,6 +122,57 @@ def upload():
         return redirect(url_for('main.dashboard'))
 
     return render_template('upload.html')
+
+@main_bp.route('/account', methods=['GET', 'POST'])
+@login_required
+def account_settings():
+    if request.method == 'POST':
+        email = (request.form.get('email') or '').strip()
+        current_password = request.form.get('current_password') or ''
+        new_password = request.form.get('new_password') or ''
+        confirm_password = request.form.get('confirm_password') or ''
+        email_notifications = request.form.get('email_notifications') == 'on'
+
+        email_changed = email != current_user.email
+        password_changed = bool(new_password or confirm_password)
+
+        if not email:
+            flash('Email is required.', 'error')
+            return redirect(url_for('main.account_settings'))
+
+        if email_changed:
+            existing_email = User.query.filter(User.email == email, User.id != current_user.id).first()
+            if existing_email:
+                flash('That email address is already in use.', 'error')
+                return redirect(url_for('main.account_settings'))
+
+        if password_changed:
+            if new_password != confirm_password:
+                flash('New password and confirmation do not match.', 'error')
+                return redirect(url_for('main.account_settings'))
+            if len(new_password) < 8:
+                flash('New password must be at least 8 characters long.', 'error')
+                return redirect(url_for('main.account_settings'))
+
+        if email_changed or password_changed:
+            if not current_password:
+                flash('Current password is required to change email or password.', 'error')
+                return redirect(url_for('main.account_settings'))
+            if not current_user.check_password(current_password):
+                flash('Current password is incorrect.', 'error')
+                return redirect(url_for('main.account_settings'))
+
+        current_user.email = email
+        current_user.email_notifications = email_notifications
+
+        if password_changed:
+            current_user.set_password(new_password)
+
+        db.session.commit()
+        flash('Account settings updated successfully.', 'success')
+        return redirect(url_for('main.account_settings'))
+
+    return render_template('account.html')
 
 @main_bp.route('/files')
 @login_required
