@@ -120,15 +120,13 @@ def get_secondary_notification_recipient(file, user):
         return None
 
     secondary = file.notification_email.strip()
-    primary = (user.email or '').strip().lower()
-    if secondary.lower() == primary:
-        return None
-    return secondary
+    return secondary or None
 
 
 def build_existing_attachments(file):
     candidates = [
         (file.file_path, file.original_filename),
+        (f"{file.file_path}.sig", f"{file.original_filename}.sig"),
         (f"{file.file_path}.ots", f"{file.original_filename}.ots"),
     ]
     return [(file_path, attachment_name) for file_path, attachment_name in candidates if os.path.exists(file_path)]
