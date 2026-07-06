@@ -485,6 +485,35 @@ textarea.form-control {
     overflow-x: auto;
 }
 
+.dashboard-filter-form {
+    margin-bottom: 1.25rem;
+    padding: 1rem;
+    border: 1px solid var(--border-soft);
+    border-radius: 1.25rem;
+    background:
+        linear-gradient(180deg, rgba(28, 108, 243, 0.04) 0%, rgba(255, 255, 255, 0.98) 100%);
+}
+
+.dashboard-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.9rem;
+}
+
+.dashboard-filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.dashboard-filter-summary {
+    color: var(--text-soft);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
 .dashboard-table > :not(caption) > * > * {
     padding-top: 0.8rem;
     padding-bottom: 0.8rem;
@@ -939,6 +968,14 @@ code {
     }
 
     .btn-group .btn {
+        width: 100%;
+    }
+
+    .dashboard-filter-actions {
+        align-items: stretch;
+    }
+
+    .dashboard-filter-actions .btn {
         width: 100%;
     }
 

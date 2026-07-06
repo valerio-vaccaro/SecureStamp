@@ -11,7 +11,7 @@ import uuid
 import hashlib
 import os
 from email.utils import parseaddr
-from datetime import datetime
+from datetime import datetime, timedelta
 
 auth_bp = Blueprint('auth', __name__)
 main_bp = Blueprint('main', __name__)
@@ -255,8 +255,67 @@ def logout():
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
-    files = File.query.filter_by(user_id=current_user.id).order_by(File.uploaded_at.desc()).all()
-    return render_template('dashboard.html', files=files, config=current_app.config)
+    filename_query = (request.args.get('filename') or '').strip()
+    status_filter = (request.args.get('status') or '').strip()
+    date_from_raw = (request.args.get('date_from') or '').strip()
+    date_to_raw = (request.args.get('date_to') or '').strip()
+
+    filters = {
+        'filename': filename_query,
+        'status': status_filter,
+        'date_from': date_from_raw,
+        'date_to': date_to_raw,
+    }
+
+    status_options = [
+        row[0]
+        for row in db.session.query(File.status)
+        .filter_by(user_id=current_user.id)
+        .distinct()
+        .order_by(File.status.asc())
+        .all()
+        if row[0]
+    ]
+
+    query = File.query.filter_by(user_id=current_user.id)
+    total_files_count = query.count()
+
+    if filename_query:
+        query = query.filter(File.original_filename.ilike(f"%{filename_query}%"))
+
+    if status_filter:
+        query = query.filter(File.status == status_filter)
+
+    invalid_filters = []
+
+    if date_from_raw:
+        try:
+            date_from = datetime.strptime(date_from_raw, '%Y-%m-%d')
+            query = query.filter(File.uploaded_at >= date_from)
+        except ValueError:
+            invalid_filters.append('start date')
+
+    if date_to_raw:
+        try:
+            date_to = datetime.strptime(date_to_raw, '%Y-%m-%d') + timedelta(days=1)
+            query = query.filter(File.uploaded_at < date_to)
+        except ValueError:
+            invalid_filters.append('end date')
+
+    if invalid_filters:
+        flash(f"Ignored invalid dashboard filter: {', '.join(invalid_filters)}.", 'error')
+
+    files = query.order_by(File.uploaded_at.desc()).all()
+
+    return render_template(
+        'dashboard.html',
+        files=files,
+        config=current_app.config,
+        filters=filters,
+        status_options=status_options,
+        total_files_count=total_files_count,
+        has_active_filters=any(filters.values()),
+    )
 
 def allowed_file(filename):
     return bool((filename or '').strip())

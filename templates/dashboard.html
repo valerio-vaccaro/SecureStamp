@@ -64,6 +64,42 @@
             </div>
         </div>
         <div class="card-body">
+            <form method="get" action="{{ url_for('main.dashboard') }}" class="dashboard-filter-form">
+                <div class="dashboard-filter-grid">
+                    <div>
+                        <label for="filename" class="form-label">Filename contains</label>
+                        <input type="text" class="form-control" id="filename" name="filename" value="{{ filters.filename }}" placeholder="contract, invoice, report">
+                    </div>
+                    <div>
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">All statuses</option>
+                            {% for status_option in status_options %}
+                            <option value="{{ status_option }}" {% if filters.status == status_option %}selected{% endif %}>{{ status_option }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="date_from" class="form-label">Uploaded from</label>
+                        <input type="date" class="form-control" id="date_from" name="date_from" value="{{ filters.date_from }}">
+                    </div>
+                    <div>
+                        <label for="date_to" class="form-label">Uploaded to</label>
+                        <input type="date" class="form-control" id="date_to" name="date_to" value="{{ filters.date_to }}">
+                    </div>
+                </div>
+                <div class="dashboard-filter-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-rotate-left"></i> Reset
+                    </a>
+                    {% if has_active_filters %}
+                    <span class="dashboard-filter-summary">Showing {{ files|length }} of {{ total_files_count }} files.</span>
+                    {% endif %}
+                </div>
+            </form>
             {% if files %}
                 <div class="table-responsive dashboard-table-wrap">
                     <table class="table table-hover dashboard-table">
@@ -129,11 +165,19 @@
             {% else %}
                 <div class="empty-state">
                     <i class="fas fa-file-upload fa-2x"></i>
+                    {% if has_active_filters %}
+                    <h3 class="section-title mb-2">No files match these filters</h3>
+                    <p class="page-subtitle mx-auto">Try widening the date range, clearing the status filter, or searching with a broader filename fragment.</p>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary mt-2">
+                        <i class="fas fa-rotate-left"></i> Clear Filters
+                    </a>
+                    {% else %}
                     <h3 class="section-title mb-2">No files uploaded yet</h3>
                     <p class="page-subtitle mx-auto">Start by uploading your first document package. SecureStamp will keep its file, timestamp, and signature assets together.</p>
                     <a href="{{ url_for('main.upload') }}" class="btn btn-primary mt-2">
                         <i class="fas fa-upload"></i> Upload Your First File
                     </a>
+                    {% endif %}
                 </div>
             {% endif %}
         </div>
