@@ -3,10 +3,6 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-{% set total_file_downloads = files | sum(attribute='file_downloads') %}
-{% set total_timestamp_downloads = files | sum(attribute='timestamp_downloads') %}
-{% set total_signature_downloads = files | sum(attribute='signature_downloads') %}
-
 <div class="section-stack">
     <section class="hero-panel">
         <div class="eyebrow">
@@ -26,24 +22,24 @@
         </div>
         <div class="metric-grid">
             <div class="metric-card metric-card-compact">
-                <div class="metric-label">Stored Files</div>
-                <div class="metric-value">{{ files|length }}</div>
-                <div class="metric-note">Vault records</div>
+                <div class="metric-label">Filtered Files</div>
+                <div class="metric-value">{{ total_filtered_count }}</div>
+                <div class="metric-note">{% if has_active_filters %}Matching records{% else %}Vault records{% endif %}</div>
             </div>
             <div class="metric-card metric-card-compact">
                 <div class="metric-label">File Downloads</div>
-                <div class="metric-value">{{ total_file_downloads }}</div>
-                <div class="metric-note">Original files</div>
+                <div class="metric-value">{{ filtered_file_downloads }}</div>
+                <div class="metric-note">{% if has_active_filters %}Across filtered files{% else %}Original files{% endif %}</div>
             </div>
             <div class="metric-card metric-card-compact">
                 <div class="metric-label">Timestamp Downloads</div>
-                <div class="metric-value">{{ total_timestamp_downloads }}</div>
-                <div class="metric-note">Proof packages</div>
+                <div class="metric-value">{{ filtered_timestamp_downloads }}</div>
+                <div class="metric-note">{% if has_active_filters %}Across filtered files{% else %}Proof packages{% endif %}</div>
             </div>
             <div class="metric-card metric-card-compact">
                 <div class="metric-label">Signature Downloads</div>
-                <div class="metric-value">{{ total_signature_downloads }}</div>
-                <div class="metric-note">Signature exports</div>
+                <div class="metric-value">{{ filtered_signature_downloads }}</div>
+                <div class="metric-note">{% if has_active_filters %}Across filtered files{% else %}Signature exports{% endif %}</div>
             </div>
         </div>
     </section>
@@ -96,7 +92,9 @@
                         <i class="fas fa-rotate-left"></i> Reset
                     </a>
                     {% if has_active_filters %}
-                    <span class="dashboard-filter-summary">Showing {{ files|length }} of {{ total_files_count }} files.</span>
+                    <span class="dashboard-filter-summary">Showing {{ total_filtered_count }} of {{ total_files_count }} files.</span>
+                    {% else %}
+                    <span class="dashboard-filter-summary">Showing page {{ current_page }} of {{ total_pages }}.</span>
                     {% endif %}
                 </div>
             </form>
@@ -162,6 +160,28 @@
                         </tbody>
                     </table>
                 </div>
+                {% if total_pages > 1 %}
+                <div class="dashboard-pagination">
+                    <div class="dashboard-filter-summary">Page {{ current_page }} of {{ total_pages }}. Showing up to {{ per_page }} files per page.</div>
+                    <div class="btn-group">
+                        {% if prev_page_url %}
+                        <a href="{{ prev_page_url }}" class="btn btn-secondary">
+                            <i class="fas fa-chevron-left"></i> Previous
+                        </a>
+                        {% endif %}
+                        {% for page_number in page_numbers %}
+                        <a href="{{ page_urls[page_number] }}" class="btn {% if page_number == current_page %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            {{ page_number }}
+                        </a>
+                        {% endfor %}
+                        {% if next_page_url %}
+                        <a href="{{ next_page_url }}" class="btn btn-secondary">
+                            Next <i class="fas fa-chevron-right"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
             {% else %}
                 <div class="empty-state">
                     <i class="fas fa-file-upload fa-2x"></i>

@@ -10,6 +10,7 @@ import subprocess
 import uuid
 import hashlib
 import os
+import math
 from email.utils import parseaddr
 from datetime import datetime, timedelta
 
@@ -255,6 +256,8 @@ def logout():
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():
+    page = max(request.args.get('page', 1, type=int), 1)
+    per_page = 100
     filename_query = (request.args.get('filename') or '').strip()
     status_filter = (request.args.get('status') or '').strip()
     date_from_raw = (request.args.get('date_from') or '').strip()
@@ -305,7 +308,33 @@ def dashboard():
     if invalid_filters:
         flash(f"Ignored invalid dashboard filter: {', '.join(invalid_filters)}.", 'error')
 
-    files = query.order_by(File.uploaded_at.desc()).all()
+    total_filtered_count = query.count()
+    total_pages = max(1, math.ceil(total_filtered_count / per_page)) if total_filtered_count else 1
+    page = min(page, total_pages)
+
+    files = (
+        query.order_by(File.uploaded_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+        .all()
+    )
+
+    aggregate_row = query.with_entities(
+        db.func.coalesce(db.func.sum(File.file_downloads), 0),
+        db.func.coalesce(db.func.sum(File.timestamp_downloads), 0),
+        db.func.coalesce(db.func.sum(File.signature_downloads), 0),
+    ).first()
+
+    pagination_params = {key: value for key, value in filters.items() if value}
+
+    def build_dashboard_page_url(target_page):
+        params = dict(pagination_params)
+        params['page'] = target_page
+        return url_for('main.dashboard', **params)
+
+    pagination_window_start = max(1, page - 2)
+    pagination_window_end = min(total_pages, page + 2)
+    page_numbers = list(range(pagination_window_start, pagination_window_end + 1))
 
     return render_template(
         'dashboard.html',
@@ -314,7 +343,18 @@ def dashboard():
         filters=filters,
         status_options=status_options,
         total_files_count=total_files_count,
+        total_filtered_count=total_filtered_count,
         has_active_filters=any(filters.values()),
+        current_page=page,
+        per_page=per_page,
+        total_pages=total_pages,
+        page_numbers=page_numbers,
+        prev_page_url=build_dashboard_page_url(page - 1) if page > 1 else None,
+        next_page_url=build_dashboard_page_url(page + 1) if page < total_pages else None,
+        page_urls={page_number: build_dashboard_page_url(page_number) for page_number in page_numbers},
+        filtered_file_downloads=aggregate_row[0],
+        filtered_timestamp_downloads=aggregate_row[1],
+        filtered_signature_downloads=aggregate_row[2],
     )
 
 def allowed_file(filename):
