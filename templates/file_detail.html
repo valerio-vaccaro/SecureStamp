@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}File Details{% endblock %}
+{% block title %}{{ t('file_detail.title') }}{% endblock %}
 
 {% block content %}
 <div class="section-stack">
@@ -9,14 +9,14 @@
             <div>
                 <div class="eyebrow">
                     <i class="fas fa-file-shield"></i>
-                    File Record
+                    {{ t('file_detail.eyebrow') }}
                 </div>
                 <h1 class="page-title">{{ file.original_filename }}</h1>
-                <p class="page-subtitle">Review metadata, verification identifiers, and export actions for this stored document package.</p>
+                <p class="page-subtitle">{{ t('file_detail.hero_body') }}</p>
             </div>
             <div>
                 <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
-                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    <i class="fas fa-arrow-left"></i> {{ t('common.back_to_dashboard') }}
                 </a>
             </div>
         </div>
@@ -26,41 +26,45 @@
         <div class="col-lg-8">
             <section class="card h-100">
                 <div class="card-header">
-                    <h2 class="section-title">Metadata</h2>
+                    <h2 class="section-title">{{ t('file_detail.metadata') }}</h2>
                 </div>
                 <div class="card-body">
                     <div class="detail-list">
                         <div class="detail-item">
-                            <div class="detail-label">Filename</div>
+                            <div class="detail-label">{{ t('common.filename') }}</div>
                             <div class="detail-value"><i class="fas fa-file me-2"></i>{{ file.original_filename }}</div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-label">Upload Date</div>
+                            <div class="detail-label">{{ t('file_detail.upload_date') }}</div>
                             <div class="detail-value"><i class="fas fa-calendar me-2"></i>{{ file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-label">Status</div>
+                            <div class="detail-label">{{ t('common.status') }}</div>
                             <div class="detail-value">
-                                <span class="badge bg-{{ file.get_status_badge() }}">{{ file.status }}</span>
+                                <span class="badge bg-{{ file.get_status_badge() }}">{{ translate_status(file.status) }}</span>
                             </div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-label">File UUID</div>
+                            <div class="detail-label">{{ t('file_detail.file_uuid') }}</div>
                             <div class="detail-value"><i class="fas fa-hashtag me-2"></i><code class="user-select-all">{{ file.storage_key }}</code></div>
                         </div>
                         <div class="detail-item">
-                            <div class="detail-label">Owner</div>
+                            <div class="detail-label">{{ t('file_detail.owner') }}</div>
                             <div class="detail-value"><i class="fas fa-user me-2"></i>{{ current_user.username }}</div>
                         </div>
                         {% if file.notification_email %}
                         <div class="detail-item">
-                            <div class="detail-label">External Email</div>
+                            <div class="detail-label">{{ t('file_detail.external_email') }}</div>
                             <div class="detail-value"><i class="fas fa-envelope me-2"></i>{{ file.notification_email }}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">{{ t('file_detail.external_email_language') }}</div>
+                            <div class="detail-value"><i class="fas fa-language me-2"></i>{{ available_languages.get(file.notification_email_language or 'en', available_languages['en']) }}</div>
                         </div>
                         {% endif %}
                         {% if file.status != 'Timestamp completed' %}
                         <div class="detail-item">
-                            <div class="detail-label">Update External Email</div>
+                            <div class="detail-label">{{ t('file_detail.update_external_email') }}</div>
                             <div class="detail-value">
                                 <form method="post" class="d-grid gap-2">
                                     <input
@@ -68,11 +72,20 @@
                                         class="form-control"
                                         name="notification_email"
                                         value="{{ file.notification_email or '' }}"
-                                        placeholder="optional@example.com"
+                                        placeholder="{{ t('upload.additional_email_placeholder') }}"
                                     >
-                                    <div class="form-text">Optional. This address receives the attachment-only timestamp completion email. Leave empty to remove it.</div>
+                                    <div class="form-text">{{ t('file_detail.external_email_help') }}</div>
+                                    <select
+                                        class="form-select"
+                                        name="notification_email_language"
+                                    >
+                                        {% for code, label in available_languages.items() %}
+                                        <option value="{{ code }}" {% if code == (file.notification_email_language or current_language) %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">{{ t('file_detail.external_email_language_help') }}</div>
                                     <button type="submit" class="btn btn-outline-primary">
-                                        <i class="fas fa-save"></i> Save External Email
+                                        <i class="fas fa-save"></i> {{ t('file_detail.save_external_email') }}
                                     </button>
                                 </form>
                             </div>
@@ -80,17 +93,17 @@
                         {% endif %}
                         {% if file_hash %}
                         <div class="detail-item">
-                            <div class="detail-label">SHA256 Hash</div>
+                            <div class="detail-label">{{ t('file_detail.sha256') }}</div>
                             <div class="detail-value"><code class="user-select-all">{{ file_hash }}</code></div>
                         </div>
                         {% endif %}
                         <div class="detail-item">
-                            <div class="detail-label">Download Activity</div>
+                            <div class="detail-label">{{ t('file_detail.download_activity') }}</div>
                             <div class="detail-value">
                                 <div class="stat-pill-row">
-                                    <span class="stat-pill"><i class="fas fa-file"></i> File: {{ file.file_downloads }}</span>
-                                    <span class="stat-pill"><i class="fas fa-clock"></i> Timestamp: {{ file.timestamp_downloads }}</span>
-                                    <span class="stat-pill"><i class="fas fa-signature"></i> Signature: {{ file.signature_downloads }}</span>
+                                    <span class="stat-pill"><i class="fas fa-file"></i> {{ t('file_detail.file_download_count', count=file.file_downloads) }}</span>
+                                    <span class="stat-pill"><i class="fas fa-clock"></i> {{ t('file_detail.timestamp_download_count', count=file.timestamp_downloads) }}</span>
+                                    <span class="stat-pill"><i class="fas fa-signature"></i> {{ t('file_detail.signature_download_count', count=file.signature_downloads) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -101,18 +114,18 @@
         <div class="col-lg-4">
             <section class="card h-100">
                 <div class="card-header">
-                    <h2 class="section-title">Actions</h2>
+                    <h2 class="section-title">{{ t('common.actions') }}</h2>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
                         <a href="{{ url_for('main.download_file', file_ref=file.storage_key) }}" class="btn btn-success">
-                            <i class="fas fa-download"></i> Download File
+                            <i class="fas fa-download"></i> {{ t('file_detail.download_file') }}
                         </a>
                         <a href="{{ url_for('main.download_timestamp', file_ref=file.storage_key) }}" class="btn btn-warning">
-                            <i class="fas fa-clock"></i> Download Timestamp
+                            <i class="fas fa-clock"></i> {{ t('file_detail.download_timestamp') }}
                         </a>
                         <a href="{{ url_for('main.download_signature', file_ref=file.storage_key) }}" class="btn btn-primary">
-                            <i class="fas fa-signature"></i> Download Signature
+                            <i class="fas fa-signature"></i> {{ t('file_detail.download_signature') }}
                         </a>
                     </div>
                 </div>

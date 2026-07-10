@@ -5,6 +5,7 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from config import Config
 from flask_mail import Mail
+from i18n import init_i18n
 
 # Initialize Flask extensions
 db = SQLAlchemy()
@@ -30,6 +31,7 @@ def create_app():
     from routes import auth_bp, main_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
+    init_i18n(app)
 
     return app
 

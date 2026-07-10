@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ current_language }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,54 +24,54 @@
                             </span>
                             <span class="brand-copy">
                                 <span class="brand-title">SecureStamp</span>
-                                <span class="brand-subtitle">Stamp your files on the Bitcoin blockchain</span>
+                                <span class="brand-subtitle">{{ t('brand.subtitle') }}</span>
                             </span>
                         </a>
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="{{ t('nav.toggle') }}">
                             <span class="navbar-toggler-icon"></span>
                         </button>
                         <div class="collapse navbar-collapse" id="navbarNav">
                             <ul class="navbar-nav ms-auto">
                                 <li class="nav-item">
                                     <a class="nav-link" href="{{ url_for('main.api_docs') }}">
-                                        <i class="fas fa-book"></i> API Docs
+                                        <i class="fas fa-book"></i> {{ t('nav.api_docs') }}
                                     </a>
                                 </li>
                                 {% if current_user.is_authenticated %}
                                     <li class="nav-item">
                                         <a class="nav-link" href="{{ url_for('main.dashboard') }}">
-                                            <i class="fas fa-home"></i> Dashboard
+                                            <i class="fas fa-home"></i> {{ t('nav.dashboard') }}
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a class="nav-link" href="{{ url_for('main.account_settings') }}">
-                                            <i class="fas fa-user-cog"></i> Account
+                                            <i class="fas fa-user-cog"></i> {{ t('nav.account') }}
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a class="nav-link" href="{{ url_for('main.manage_tokens') }}">
-                                            <i class="fas fa-key"></i> Tokens
+                                            <i class="fas fa-key"></i> {{ t('nav.tokens') }}
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a class="nav-link" href="{{ url_for('main.upload') }}">
-                                            <i class="fas fa-upload"></i> Upload
+                                            <i class="fas fa-upload"></i> {{ t('nav.upload') }}
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a class="nav-link" href="{{ url_for('auth.logout') }}">
-                                            <i class="fas fa-sign-out-alt"></i> Logout
+                                            <i class="fas fa-sign-out-alt"></i> {{ t('nav.logout') }}
                                         </a>
                                     </li>
                                 {% else %}
                                     <li class="nav-item">
                                         <a class="nav-link" href="{{ url_for('auth.login') }}">
-                                            <i class="fas fa-sign-in-alt"></i> Login
+                                            <i class="fas fa-sign-in-alt"></i> {{ t('nav.login') }}
                                         </a>
                                     </li>
                                     <li class="nav-item">
                                         <a class="nav-link" href="{{ url_for('auth.register') }}">
-                                            <i class="fas fa-user-plus"></i> Register
+                                            <i class="fas fa-user-plus"></i> {{ t('nav.register') }}
                                         </a>
                                     </li>
                                 {% endif %}
@@ -106,15 +106,15 @@
                         </div>
                         <div class="security-grid">
                             <div class="security-item">
-                                <strong>GPG Key</strong>
+                                <strong>{{ t('security.gpg_key') }}</strong>
                                 <code>{{ config.GPG_USER }}</code>
                             </div>
                             <div class="security-item">
-                                <strong>Onion Address</strong>
+                                <strong>{{ t('security.onion_address') }}</strong>
                                 <code>{{ config.ONION_URL }}</code>
                             </div>
                             <div class="security-item">
-                                <strong>Version</strong>
+                                <strong>{{ t('security.version') }}</strong>
                                 <code>{{ config.APP_VERSION }}</code>
                             </div>
                         </div>

@@ -1,34 +1,43 @@
 {% extends "base.html" %}
 
-{% block title %}Upload Files{% endblock %}
+{% block title %}{{ t('upload.title') }}{% endblock %}
 
 {% block content %}
 <div class="section-stack">
     <section class="hero-panel">
         <div class="eyebrow">
             <i class="fas fa-cloud-arrow-up"></i>
-            Intake
+            {{ t('upload.eyebrow') }}
         </div>
-        <h1 class="page-title">Upload document packages</h1>
-        <p class="page-subtitle">Add one or more files to SecureStamp. Each upload can be paired with its timestamp evidence and signature material for later retrieval.</p>
+        <h1 class="page-title">{{ t('upload.hero_title') }}</h1>
+        <p class="page-subtitle">{{ t('upload.hero_body') }}</p>
     </section>
 
     <section class="card">
         <div class="card-header">
-            <h2 class="section-title"><i class="fas fa-upload me-2"></i>File upload</h2>
+            <h2 class="section-title"><i class="fas fa-upload me-2"></i>{{ t('upload.section_title') }}</h2>
         </div>
         <div class="card-body">
             <form id="uploadForm" method="post" enctype="multipart/form-data">
                 <div class="upload-dropzone">
                     <div class="mb-3">
-                        <label for="files" class="form-label">Choose files</label>
+                        <label for="files" class="form-label">{{ t('upload.choose_files') }}</label>
                         <input type="file" class="form-control" id="files" name="files" multiple>
-                        <div class="form-text">Any file type can be uploaded.</div>
+                        <div class="form-text">{{ t('upload.any_file_type') }}</div>
                     </div>
                     <div class="mb-3">
-                        <label for="notification_email" class="form-label">Additional confirmation email</label>
-                        <input type="email" class="form-control" id="notification_email" name="notification_email" placeholder="optional@example.com">
-                        <div class="form-text">Optional. If set, SecureStamp.it will send a timestamp completion email with attached file to this address for every file in this upload.</div>
+                        <label for="notification_email" class="form-label">{{ t('upload.additional_email') }}</label>
+                        <input type="email" class="form-control" id="notification_email" name="notification_email" placeholder="{{ t('upload.additional_email_placeholder') }}">
+                        <div class="form-text">{{ t('upload.additional_email_help') }}</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notification_email_language" class="form-label">{{ t('upload.additional_email_language') }}</label>
+                        <select id="notification_email_language" name="notification_email_language" class="form-select">
+                            {% for code, label in available_languages.items() %}
+                            <option value="{{ code }}" {% if code == (current_user.email_notification_language or 'en') %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">{{ t('upload.additional_email_language_help') }}</div>
                     </div>
                     <div id="upload-preview" class="upload-preview"></div>
                 </div>
@@ -43,10 +52,10 @@
 
                 <div class="mt-4 d-flex flex-wrap gap-3">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-upload"></i> Upload Files
+                        <i class="fas fa-upload"></i> {{ t('upload.submit') }}
                     </button>
                     <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        <i class="fas fa-arrow-left"></i> {{ t('common.back_to_dashboard') }}
                     </a>
                 </div>
             </form>
@@ -58,6 +67,11 @@
 {% block extra_scripts %}
 {{ super() }}
 <script>
+const uploadTranslations = {
+    success: {{ t('upload.success')|tojson }},
+    failed: {{ t('upload.failed')|tojson }}
+};
+
 document.getElementById('uploadForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
@@ -82,12 +96,12 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
 
     xhr.addEventListener('load', function() {
         if (xhr.status === 200) {
-            uploadStatus.innerHTML = '<div class="alert alert-success">Files uploaded successfully.</div>';
+            uploadStatus.innerHTML = `<div class="alert alert-success">${uploadTranslations.success}</div>`;
             setTimeout(() => {
                 window.location.href = '{{ url_for("main.dashboard") }}';
             }, 1000);
         } else {
-            let message = 'Upload failed. Please try again.';
+            let message = uploadTranslations.failed;
             try {
                 const payload = JSON.parse(xhr.responseText);
                 if (payload.error) {
@@ -101,7 +115,7 @@ document.getElementById('uploadForm').addEventListener('submit', function(e) {
     });
 
     xhr.addEventListener('error', function() {
-        uploadStatus.innerHTML = '<div class="alert alert-danger">Upload failed. Please try again.</div>';
+        uploadStatus.innerHTML = `<div class="alert alert-danger">${uploadTranslations.failed}</div>`;
     });
 
     xhr.open('POST', '{{ url_for("main.upload") }}', true);

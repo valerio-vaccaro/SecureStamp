@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ email_lang }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Timestamp Completed</title>
+    <title>{{ email_t('title') }}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f7fb;color:#10233b;font-family:Arial,sans-serif;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f4f7fb;padding:24px 12px;">
@@ -13,51 +13,51 @@
                     <tr>
                         <td style="padding:28px 32px;background:linear-gradient(135deg,#2d7fff 0%,#1c6cf3 100%);color:#ffffff;">
                             <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;opacity:0.85;">SecureStamp.it</div>
-                            <h1 style="margin:10px 0 0;font-size:26px;line-height:1.2;">Timestamp completed</h1>
-                            <p style="margin:10px 0 0;font-size:15px;line-height:1.6;opacity:0.92;">The timestamp for <strong>{{ file.original_filename }}</strong> has been confirmed.</p>
+                            <h1 style="margin:10px 0 0;font-size:26px;line-height:1.2;">{{ email_t('hero_title') }}</h1>
+                            <p style="margin:10px 0 0;font-size:15px;line-height:1.6;opacity:0.92;">{{ email_t('hero_subtitle_primary', filename=file.original_filename) }}</p>
                         </td>
                     </tr>
                     <tr>
                         <td style="padding:28px 32px;">
-                            <p style="margin:0 0 18px;font-size:15px;line-height:1.7;">Hello {{ user.username }},</p>
-                            <p style="margin:0 0 14px;font-size:15px;line-height:1.7;">SecureStamp.it has completed the timestamping workflow for your uploaded file. The record details are below.</p>
-                            <p style="margin:0 0 22px;font-size:14px;line-height:1.7;color:#5c7088;">To protect access to your evidence package, the links in this email work only after you log in to the SecureStamp.it platform with your account.</p>
+                            <p style="margin:0 0 18px;font-size:15px;line-height:1.7;">{{ email_t('hello_user', username=user.username) }}</p>
+                            <p style="margin:0 0 14px;font-size:15px;line-height:1.7;">{{ email_t('body_primary') }}</p>
+                            <p style="margin:0 0 22px;font-size:14px;line-height:1.7;color:#5c7088;">{{ email_t('protect_note') }}</p>
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
                                 <tr>
-                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;width:180px;font-size:13px;font-weight:700;color:#54657b;">File name</td>
+                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;width:180px;font-size:13px;font-weight:700;color:#54657b;">{{ email_t('file_name') }}</td>
                                     <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:14px;color:#10233b;">{{ file.original_filename }}</td>
                                 </tr>
                                 <tr>
-                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;width:180px;font-size:13px;font-weight:700;color:#54657b;">File UUID</td>
+                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;width:180px;font-size:13px;font-weight:700;color:#54657b;">{{ email_t('file_uuid') }}</td>
                                     <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:14px;color:#10233b;"><code style="display:inline-block;padding:6px 10px;border-radius:10px;background-color:#eef5fd;font-size:12px;line-height:1.6;color:#14314f;word-break:break-all;">{{ file.storage_key }}</code></td>
                                 </tr>
                                 <tr>
-                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:13px;font-weight:700;color:#54657b;">Status</td>
-                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:14px;color:#10233b;">{{ file.status }}</td>
+                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:13px;font-weight:700;color:#54657b;">{{ email_t('status') }}</td>
+                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:14px;color:#10233b;">{{ translated_status }}</td>
                                 </tr>
                                 <tr>
-                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:13px;font-weight:700;color:#54657b;">Uploaded at (UTC)</td>
+                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:13px;font-weight:700;color:#54657b;">{{ email_t('uploaded_at') }}</td>
                                     <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:14px;color:#10233b;">{{ file.uploaded_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                                 </tr>
                                 <tr>
-                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:13px;font-weight:700;color:#54657b;">Confirmed at (UTC)</td>
+                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:13px;font-weight:700;color:#54657b;">{{ email_t('confirmed_at') }}</td>
                                     <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:14px;color:#10233b;">{{ confirmed_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                                 </tr>
                                 <tr>
-                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:13px;font-weight:700;color:#54657b;">Time to confirmation</td>
+                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:13px;font-weight:700;color:#54657b;">{{ email_t('time_to_confirmation') }}</td>
                                     <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:14px;color:#10233b;">{{ completion_time }}</td>
                                 </tr>
                                 <tr>
-                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:13px;font-weight:700;color:#54657b;">File size</td>
+                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:13px;font-weight:700;color:#54657b;">{{ email_t('file_size') }}</td>
                                     <td style="padding:12px 0;border-top:1px solid #e4edf6;font-size:14px;color:#10233b;">{{ file_size }}</td>
                                 </tr>
                                 <tr>
-                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;border-bottom:1px solid #e4edf6;font-size:13px;font-weight:700;color:#54657b;">SHA256 hash</td>
+                                    <td style="padding:12px 0;border-top:1px solid #e4edf6;border-bottom:1px solid #e4edf6;font-size:13px;font-weight:700;color:#54657b;">{{ email_t('sha256_hash') }}</td>
                                     <td style="padding:12px 0;border-top:1px solid #e4edf6;border-bottom:1px solid #e4edf6;font-size:14px;color:#10233b;">
                                         {% if file_hash %}
                                             <code style="display:inline-block;padding:10px 12px;border-radius:10px;background-color:#eef5fd;font-size:12px;line-height:1.6;color:#14314f;word-break:break-all;">{{ file_hash }}</code>
                                         {% else %}
-                                            Not available
+                                            {{ email_t('not_available') }}
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -65,27 +65,27 @@
 
                             {% if file_download_url or timestamp_download_url or file_detail_url %}
                             <div style="padding:22px 0 6px;">
-                                <h2 style="margin:0 0 10px;font-size:18px;line-height:1.4;color:#10233b;">Available actions</h2>
-                                <p style="margin:0 0 18px;font-size:14px;line-height:1.7;color:#5c7088;">After signing in, you can download the original file, retrieve the completed timestamp proof, and inspect the timestamp record details from your SecureStamp.it workspace.</p>
+                                <h2 style="margin:0 0 10px;font-size:18px;line-height:1.4;color:#10233b;">{{ email_t('actions_title') }}</h2>
+                                <p style="margin:0 0 18px;font-size:14px;line-height:1.7;color:#5c7088;">{{ email_t('actions_body') }}</p>
                                 {% if file_download_url %}
-                                <a href="{{ file_download_url }}" style="display:inline-block;margin:0 10px 10px 0;padding:12px 18px;border-radius:999px;background-color:#12b981;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">Download file</a>
+                                <a href="{{ file_download_url }}" style="display:inline-block;margin:0 10px 10px 0;padding:12px 18px;border-radius:999px;background-color:#12b981;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">{{ email_t('download_file') }}</a>
                                 {% endif %}
                                 {% if timestamp_download_url %}
-                                <a href="{{ timestamp_download_url }}" style="display:inline-block;margin:0 10px 10px 0;padding:12px 18px;border-radius:999px;background-color:#f59e0b;color:#1f2937;font-size:14px;font-weight:700;text-decoration:none;">Download completed proof</a>
+                                <a href="{{ timestamp_download_url }}" style="display:inline-block;margin:0 10px 10px 0;padding:12px 18px;border-radius:999px;background-color:#f59e0b;color:#1f2937;font-size:14px;font-weight:700;text-decoration:none;">{{ email_t('download_proof') }}</a>
                                 {% endif %}
                                 {% if file_detail_url %}
-                                <a href="{{ file_detail_url }}" style="display:inline-block;margin:0 10px 10px 0;padding:12px 18px;border-radius:999px;background-color:#1c6cf3;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">See timestamp details</a>
+                                <a href="{{ file_detail_url }}" style="display:inline-block;margin:0 10px 10px 0;padding:12px 18px;border-radius:999px;background-color:#1c6cf3;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">{{ email_t('see_details') }}</a>
                                 {% endif %}
                             </div>
                             {% endif %}
 
                             {% if platform_login_url %}
-                            <p style="margin:8px 0 0;font-size:13px;line-height:1.7;color:#5c7088;">If you are not logged in yet, open <a href="{{ platform_login_url }}" style="color:#1c6cf3;text-decoration:none;">the SecureStamp.it login page</a> first, then return to the links above.</p>
+                            <p style="margin:8px 0 0;font-size:13px;line-height:1.7;color:#5c7088;">{{ email_t('login_hint_prefix') }}<a href="{{ platform_login_url }}" style="color:#1c6cf3;text-decoration:none;">{{ email_t('login_hint_link') }}</a>{{ email_t('login_hint_suffix') }}</p>
                             {% else %}
-                            <p style="margin:8px 0 0;font-size:13px;line-height:1.7;color:#5c7088;">If the action links do not open directly, log in to SecureStamp.it first and then access this file from your dashboard.</p>
+                            <p style="margin:8px 0 0;font-size:13px;line-height:1.7;color:#5c7088;">{{ email_t('login_hint_no_link') }}</p>
                             {% endif %}
 
-                            <p style="margin:22px 0 0;font-size:13px;line-height:1.7;color:#5c7088;">This notification was generated because email notifications are enabled on your account.</p>
+                            <p style="margin:22px 0 0;font-size:13px;line-height:1.7;color:#5c7088;">{{ email_t('primary_footer') }}</p>
                         </td>
                     </tr>
                 </table>

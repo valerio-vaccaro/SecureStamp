@@ -13,13 +13,13 @@ import os
 import math
 from email.utils import parseaddr
 from datetime import datetime, timedelta
+from i18n import LANGUAGES, normalize_language, set_language, translate
 
 auth_bp = Blueprint('auth', __name__)
 main_bp = Blueprint('main', __name__)
 
 TOKEN_PERMISSION_PRESETS = {
     'full_access': {
-        'label': 'Full API access',
         'permissions': {
             'can_list_files': True,
             'can_upload_files': True,
@@ -30,7 +30,6 @@ TOKEN_PERMISSION_PRESETS = {
         },
     },
     'upload_and_timestamp_only': {
-        'label': 'Upload and timestamp only',
         'permissions': {
             'can_list_files': False,
             'can_upload_files': True,
@@ -54,12 +53,21 @@ def extract_bearer_token():
     return None
 
 
+def tr(key, **kwargs):
+    return translate(key, **kwargs)
+
+
+def get_valid_language_or_default(raw_language, default='en'):
+    return normalize_language((raw_language or '').strip(), default=default)
+
+
 def build_file_payload(file):
     return {
         'file_uuid': file.storage_key,
         'filename': file.filename,
         'original_filename': file.original_filename,
         'notification_email': file.notification_email,
+        'notification_email_language': file.notification_email_language,
         'uploaded_at': file.uploaded_at.isoformat(),
         'status': file.status,
         'file_downloads': file.file_downloads,
@@ -99,17 +107,17 @@ def resolve_api_user():
 
     raw_token = extract_bearer_token()
     if not raw_token:
-        return None, ('missing_token', 'Authentication required.')
+        return None, ('missing_token', tr('api.auth_required'))
 
     api_token = ApiToken.query.filter_by(token_hash=hash_api_token(raw_token)).first()
     if not api_token:
-        return None, ('invalid_token', 'Invalid API token.')
+        return None, ('invalid_token', tr('api.invalid_token'))
     if api_token.locked:
-        return None, ('locked_token', 'API token is locked.')
+        return None, ('locked_token', tr('api.locked_token'))
     if api_token.user.locked:
-        return None, ('locked_user', 'Token owner account is locked.')
+        return None, ('locked_user', tr('api.locked_user'))
     if api_token.max_hits is not None and api_token.hits >= api_token.max_hits:
-        return None, ('max_hits_reached', 'API token hit limit reached.')
+        return None, ('max_hits_reached', tr('api.max_hits_reached'))
 
     now = datetime.utcnow()
     api_token.hits += 1
@@ -133,13 +141,13 @@ def api_auth_required(view_func):
     return wrapped
 
 
-def token_permission_required(permission_attr, error_message='This token cannot access this endpoint.'):
+def token_permission_required(permission_attr, error_key='api.token_cannot_access_endpoint'):
     def decorator(view_func):
         @wraps(view_func)
         def wrapped(*args, **kwargs):
             api_token = getattr(g, 'api_token', None)
             if api_token is not None and not getattr(api_token, permission_attr, False):
-                return jsonify({'error': error_message, 'code': 'insufficient_scope'}), 403
+                return jsonify({'error': tr(error_key), 'code': 'insufficient_scope'}), 403
             return view_func(*args, **kwargs)
         return wrapped
     return decorator
@@ -160,9 +168,14 @@ def normalize_optional_email(raw_email):
     return parsed_email
 
 
-def process_uploaded_files(uploaded_file_objects, user, notification_email=None):
+def process_uploaded_files(uploaded_file_objects, user, notification_email=None, notification_email_language=None):
     uploaded_files = []
     notification_email = normalize_optional_email(notification_email)
+    notification_email_language = (
+        get_valid_language_or_default(notification_email_language, default='en')
+        if notification_email
+        else None
+    )
 
     for file in uploaded_file_objects:
         if file.filename == '':
@@ -185,6 +198,7 @@ def process_uploaded_files(uploaded_file_objects, user, notification_email=None)
                 filename=unique_filename,
                 original_filename=filename,
                 notification_email=notification_email,
+                notification_email_language=notification_email_language,
                 user_id=user.id,
                 file_path=file_path,
                 status='Timestamp requested'
@@ -194,11 +208,21 @@ def process_uploaded_files(uploaded_file_objects, user, notification_email=None)
                 'file_uuid': new_file.storage_key,
                 'name': filename,
                 'notification_email': notification_email,
+                'notification_email_language': notification_email_language,
                 'status': 'success',
             })
 
     db.session.commit()
     return uploaded_files
+
+
+@main_bp.route('/set-language', methods=['POST'])
+def set_language_route():
+    set_language(request.form.get('language', 'en'))
+    next_url = request.form.get('next') or request.referrer or url_for('auth.login')
+    if not next_url.startswith('/'):
+        next_url = url_for('auth.login')
+    return redirect(next_url)
 
 # Authentication routes
 @auth_bp.route('/register', methods=['GET', 'POST'])
@@ -210,12 +234,12 @@ def register():
 
         user = User.query.filter_by(username=username).first()
         if user:
-            flash('Username already exists')
+            flash(tr('flash.username_exists'), 'error')
             return redirect(url_for('auth.register'))
 
         existing_email = User.query.filter_by(email=email).first()
         if existing_email:
-            flash('Email already exists', 'error')
+            flash(tr('flash.email_exists'), 'error')
             return redirect(url_for('auth.register'))
 
         user = User(username=username, email=email, email_notifications=True)
@@ -236,13 +260,13 @@ def login():
 
         if user and user.check_password(password):
             if user.locked:
-                flash('Your account is locked. Please contact the administrator.', 'error')
+                flash(tr('flash.account_locked'), 'error')
                 return redirect(url_for('auth.login'))
             
             login_user(user)
             return redirect(url_for('main.dashboard'))
         
-        flash('Invalid username or password', 'error')
+        flash(tr('flash.invalid_credentials'), 'error')
     return render_template('login.html', service_stats=build_public_service_stats())
 
 @auth_bp.route('/logout')
@@ -296,17 +320,17 @@ def dashboard():
             date_from = datetime.strptime(date_from_raw, '%Y-%m-%d')
             query = query.filter(File.uploaded_at >= date_from)
         except ValueError:
-            invalid_filters.append('start date')
+            invalid_filters.append(tr('dashboard.filter_start_date'))
 
     if date_to_raw:
         try:
             date_to = datetime.strptime(date_to_raw, '%Y-%m-%d') + timedelta(days=1)
             query = query.filter(File.uploaded_at < date_to)
         except ValueError:
-            invalid_filters.append('end date')
+            invalid_filters.append(tr('dashboard.filter_end_date'))
 
     if invalid_filters:
-        flash(f"Ignored invalid dashboard filter: {', '.join(invalid_filters)}.", 'error')
+        flash(tr('dashboard.invalid_filter_message', filters=', '.join(invalid_filters)), 'error')
 
     total_filtered_count = query.count()
     total_pages = max(1, math.ceil(total_filtered_count / per_page)) if total_filtered_count else 1
@@ -365,19 +389,31 @@ def allowed_file(filename):
 def upload():
     if request.method == 'POST':
         if 'files' not in request.files:
-            return {'error': 'No file part'}, 400
+            return {'error': tr('api.no_file_part')}, 400
 
         files = request.files.getlist('files')
         notification_email = normalize_optional_email(request.form.get('notification_email'))
         if request.form.get('notification_email') and not notification_email:
-            return {'error': 'Invalid notification email'}, 400
+            return {'error': tr('api.invalid_notification_email')}, 400
+        raw_notification_email_language = request.form.get('notification_email_language')
+        if raw_notification_email_language and raw_notification_email_language not in LANGUAGES:
+            return {'error': tr('flash.invalid_language')}, 400
+        notification_email_language = get_valid_language_or_default(
+            raw_notification_email_language,
+            default='en',
+        )
 
-        uploaded_files = process_uploaded_files(files, current_user, notification_email)
+        uploaded_files = process_uploaded_files(
+            files,
+            current_user,
+            notification_email,
+            notification_email_language,
+        )
         
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return {'files': uploaded_files}
         
-        flash('Files uploaded successfully', 'success')
+        flash(tr('flash.files_uploaded'), 'success')
         return redirect(url_for('main.dashboard'))
 
     return render_template('upload.html')
@@ -391,44 +427,50 @@ def account_settings():
         new_password = request.form.get('new_password') or ''
         confirm_password = request.form.get('confirm_password') or ''
         email_notifications = request.form.get('email_notifications') == 'on'
+        email_notification_language = request.form.get('email_notification_language') or 'en'
+
+        if email_notification_language not in LANGUAGES:
+            flash(tr('flash.invalid_language'), 'error')
+            return redirect(url_for('main.account_settings'))
 
         email_changed = email != current_user.email
         password_changed = bool(new_password or confirm_password)
 
         if not email:
-            flash('Email is required.', 'error')
+            flash(tr('flash.email_required'), 'error')
             return redirect(url_for('main.account_settings'))
 
         if email_changed:
             existing_email = User.query.filter(User.email == email, User.id != current_user.id).first()
             if existing_email:
-                flash('That email address is already in use.', 'error')
+                flash(tr('flash.email_in_use'), 'error')
                 return redirect(url_for('main.account_settings'))
 
         if password_changed:
             if new_password != confirm_password:
-                flash('New password and confirmation do not match.', 'error')
+                flash(tr('flash.password_mismatch'), 'error')
                 return redirect(url_for('main.account_settings'))
             if len(new_password) < 8:
-                flash('New password must be at least 8 characters long.', 'error')
+                flash(tr('flash.password_too_short'), 'error')
                 return redirect(url_for('main.account_settings'))
 
         if email_changed or password_changed:
             if not current_password:
-                flash('Current password is required to change email or password.', 'error')
+                flash(tr('flash.current_password_required'), 'error')
                 return redirect(url_for('main.account_settings'))
             if not current_user.check_password(current_password):
-                flash('Current password is incorrect.', 'error')
+                flash(tr('flash.current_password_incorrect'), 'error')
                 return redirect(url_for('main.account_settings'))
 
         current_user.email = email
         current_user.email_notifications = email_notifications
+        current_user.email_notification_language = email_notification_language
 
         if password_changed:
             current_user.set_password(new_password)
 
         db.session.commit()
-        flash('Account settings updated successfully.', 'success')
+        flash(tr('flash.account_updated'), 'success')
         return redirect(url_for('main.account_settings'))
 
     return render_template('account.html')
@@ -443,11 +485,11 @@ def manage_tokens():
         permission_preset = request.form.get('permission_preset') or 'full_access'
 
         if not name:
-            flash('Token name is required.', 'error')
+            flash(tr('flash.token_name_required'), 'error')
             return redirect(url_for('main.manage_tokens'))
 
         if permission_preset not in TOKEN_PERMISSION_PRESETS:
-            flash('Invalid token permission preset.', 'error')
+            flash(tr('flash.invalid_token_preset'), 'error')
             return redirect(url_for('main.manage_tokens'))
 
         max_hits = None
@@ -455,10 +497,10 @@ def manage_tokens():
             try:
                 max_hits = int(max_hits_raw)
             except ValueError:
-                flash('Maximum hits must be a number.', 'error')
+                flash(tr('flash.max_hits_number'), 'error')
                 return redirect(url_for('main.manage_tokens'))
             if max_hits < 1:
-                flash('Maximum hits must be at least 1.', 'error')
+                flash(tr('flash.max_hits_min'), 'error')
                 return redirect(url_for('main.manage_tokens'))
 
         raw_token = secrets.token_urlsafe(32)
@@ -474,7 +516,7 @@ def manage_tokens():
         db.session.commit()
 
         session['new_api_token_value'] = raw_token
-        flash('Authorization token created successfully.', 'success')
+        flash(tr('flash.token_created'), 'success')
         return redirect(url_for('main.manage_tokens'))
 
     tokens = ApiToken.query.filter_by(user_id=current_user.id).order_by(ApiToken.created_at.desc()).all()
@@ -496,7 +538,13 @@ def toggle_token_lock(token_id):
 
     token.locked = not token.locked
     db.session.commit()
-    flash(f'Token { "locked" if token.locked else "unlocked" } successfully.', 'success')
+    flash(
+        tr(
+            'flash.token_lock_updated',
+            state=tr('flash.token_state_locked') if token.locked else tr('flash.token_state_unlocked'),
+        ),
+        'success',
+    )
     return redirect(url_for('main.manage_tokens'))
 
 
@@ -514,17 +562,17 @@ def update_token_max_hits(token_id):
         try:
             max_hits = int(max_hits_raw)
         except ValueError:
-            flash('Maximum hits must be a number.', 'error')
+            flash(tr('flash.max_hits_number'), 'error')
             return redirect(url_for('main.manage_tokens'))
 
         if max_hits < 1:
-            flash('Maximum hits must be at least 1.', 'error')
+            flash(tr('flash.max_hits_min'), 'error')
             return redirect(url_for('main.manage_tokens'))
 
         token.max_hits = max_hits
 
     db.session.commit()
-    flash('Token hit limit updated successfully.', 'success')
+    flash(tr('flash.token_hit_limit_updated'), 'success')
     return redirect(url_for('main.manage_tokens'))
 
 
@@ -539,7 +587,7 @@ def reset_token_stats(token_id):
     token.first_used_at = None
     token.last_used_at = None
     db.session.commit()
-    flash('Token statistics reset successfully.', 'success')
+    flash(tr('flash.token_stats_reset'), 'success')
     return redirect(url_for('main.manage_tokens'))
 
 
@@ -552,7 +600,7 @@ def delete_token(token_id):
 
     db.session.delete(token)
     db.session.commit()
-    flash('Token deleted successfully.', 'success')
+    flash(tr('flash.token_deleted'), 'success')
     return redirect(url_for('main.manage_tokens'))
 
 @main_bp.route('/files')
@@ -568,23 +616,32 @@ def file_detail(file_ref):
     if not file:
         abort(404)
     if file.user_id != current_user.id:
-        flash('Unauthorized access', 'error')
+        flash(tr('flash.unauthorized_access'), 'error')
         return redirect(url_for('main.dashboard'))
 
     if request.method == 'POST':
         if file.status == 'Timestamp completed':
-            flash('The external notification email cannot be changed after timestamp completion.', 'error')
+            flash(tr('flash.external_email_locked'), 'error')
             return redirect(url_for('main.file_detail', file_ref=file.storage_key))
 
         raw_notification_email = request.form.get('notification_email')
         notification_email = normalize_optional_email(raw_notification_email)
+        raw_notification_email_language = request.form.get('notification_email_language')
+        if raw_notification_email_language and raw_notification_email_language not in LANGUAGES:
+            flash(tr('flash.invalid_language'), 'error')
+            return redirect(url_for('main.file_detail', file_ref=file.storage_key))
+        notification_email_language = get_valid_language_or_default(
+            raw_notification_email_language,
+            default='en',
+        )
         if raw_notification_email and not notification_email:
-            flash('Invalid external notification email.', 'error')
+            flash(tr('flash.invalid_external_email'), 'error')
             return redirect(url_for('main.file_detail', file_ref=file.storage_key))
 
         file.notification_email = notification_email
+        file.notification_email_language = notification_email_language if notification_email else None
         db.session.commit()
-        flash('External notification email updated successfully.', 'success')
+        flash(tr('flash.external_email_updated'), 'success')
         return redirect(url_for('main.file_detail', file_ref=file.storage_key))
     
     # Calculate file hash
@@ -600,7 +657,7 @@ def file_detail(file_ref):
 
 @main_bp.route('/api/files', methods=['GET'])
 @api_auth_required
-@token_permission_required('can_list_files', 'This token cannot list files.')
+@token_permission_required('can_list_files', 'api.token_cannot_list_files')
 def api_files():
     user = get_request_user()
     files = File.query.filter_by(user_id=user.id).order_by(File.uploaded_at.desc()).all()
@@ -609,76 +666,83 @@ def api_files():
 
 @main_bp.route('/api/files/upload', methods=['POST'])
 @api_auth_required
-@token_permission_required('can_upload_files', 'This token cannot upload files or create timestamps.')
+@token_permission_required('can_upload_files', 'api.token_cannot_upload')
 def api_upload_files():
     if 'files' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
+        return jsonify({'error': tr('api.no_file_part')}), 400
 
     user = get_request_user()
     notification_email = normalize_optional_email(request.form.get('notification_email'))
     if request.form.get('notification_email') and not notification_email:
-        return jsonify({'error': 'Invalid notification email'}), 400
+        return jsonify({'error': tr('api.invalid_notification_email')}), 400
+    raw_notification_email_language = request.form.get('notification_email_language')
+    if raw_notification_email_language and raw_notification_email_language not in LANGUAGES:
+        return jsonify({'error': tr('flash.invalid_language')}), 400
+    notification_email_language = get_valid_language_or_default(
+        raw_notification_email_language,
+        default='en',
+    )
 
     files = request.files.getlist('files')
-    uploaded_files = process_uploaded_files(files, user, notification_email)
+    uploaded_files = process_uploaded_files(files, user, notification_email, notification_email_language)
     return jsonify({'files': uploaded_files})
 
 
 @main_bp.route('/api/files/<file_ref>/download', methods=['GET'])
 @api_auth_required
-@token_permission_required('can_download_files', 'This token cannot download original files.')
+@token_permission_required('can_download_files', 'api.token_cannot_download_files')
 def api_download_file(file_ref):
     user = get_request_user()
     file = get_file_by_reference(file_ref)
     if not file:
         abort(404)
     if file.user_id != user.id:
-        return jsonify({'error': 'Forbidden'}), 403
+        return jsonify({'error': tr('api.forbidden')}), 403
 
     try:
         file.file_downloads += 1
         db.session.commit()
         return send_file(file.file_path, as_attachment=True, download_name=file.original_filename)
     except FileNotFoundError:
-        return jsonify({'error': 'File not found'}), 404
+        return jsonify({'error': tr('api.file_not_found')}), 404
 
 
 @main_bp.route('/api/files/<file_ref>/timestamp', methods=['GET'])
 @api_auth_required
-@token_permission_required('can_download_timestamps', 'This token cannot download timestamp proofs.')
+@token_permission_required('can_download_timestamps', 'api.token_cannot_download_timestamps')
 def api_download_timestamp(file_ref):
     user = get_request_user()
     file = get_file_by_reference(file_ref)
     if not file:
         abort(404)
     if file.user_id != user.id:
-        return jsonify({'error': 'Forbidden'}), 403
+        return jsonify({'error': tr('api.forbidden')}), 403
 
     try:
         file.timestamp_downloads += 1
         db.session.commit()
         return send_file(file.file_path + '.ots', as_attachment=True, download_name=file.original_filename + '.ots')
     except FileNotFoundError:
-        return jsonify({'error': 'File not found'}), 404
+        return jsonify({'error': tr('api.file_not_found')}), 404
 
 
 @main_bp.route('/api/files/<file_ref>/signature', methods=['GET'])
 @api_auth_required
-@token_permission_required('can_download_signatures', 'This token cannot download signatures.')
+@token_permission_required('can_download_signatures', 'api.token_cannot_download_signatures')
 def api_download_signature(file_ref):
     user = get_request_user()
     file = get_file_by_reference(file_ref)
     if not file:
         abort(404)
     if file.user_id != user.id:
-        return jsonify({'error': 'Forbidden'}), 403
+        return jsonify({'error': tr('api.forbidden')}), 403
 
     try:
         file.signature_downloads += 1
         db.session.commit()
         return send_file(file.file_path + '.sig', as_attachment=True, download_name=file.original_filename + '.sig')
     except FileNotFoundError:
-        return jsonify({'error': 'File not found'}), 404
+        return jsonify({'error': tr('api.file_not_found')}), 404
 
 @main_bp.route('/download/<file_ref>')
 @login_required
@@ -700,7 +764,7 @@ def download_file(file_ref):
             download_name=file.original_filename
         )
     except FileNotFoundError:
-        flash('File not found', 'error')
+        flash(tr('flash.file_not_found'), 'error')
         return redirect(url_for('main.dashboard'))
 
 @main_bp.route('/download/timestamp/<file_ref>')
@@ -723,7 +787,7 @@ def download_timestamp(file_ref):
             download_name=file.original_filename+'.ots'
         )
     except FileNotFoundError:
-        flash('File not found', 'error')
+        flash(tr('flash.file_not_found'), 'error')
         return redirect(url_for('main.dashboard'))
 
 @main_bp.route('/download/signature/<file_ref>')
@@ -746,7 +810,7 @@ def download_signature(file_ref):
             download_name=file.original_filename+'.sig'
         )
     except FileNotFoundError:
-        flash('File not found', 'error')
+        flash(tr('flash.file_not_found'), 'error')
         return redirect(url_for('main.dashboard'))
 
 @main_bp.route('/api/docs')
@@ -763,19 +827,19 @@ def symbols_dashboard():
 
 @main_bp.route('/api/symbols', methods=['POST'])
 @api_auth_required
-@token_permission_required('can_manage_symbols', 'This token cannot create symbols.')
+@token_permission_required('can_manage_symbols', 'api.token_cannot_manage_symbols_create')
 def register_symbol():
     try:
         user = get_request_user()
         data = request.get_json()
         if not data:
-            return jsonify({'error': 'No data provided'}), 400
+            return jsonify({'error': tr('api.no_data_provided')}), 400
 
         # Validate required fields
         required_fields = ['name', 'description']
         for field in required_fields:
             if field not in data:
-                return jsonify({'error': f'Missing required field: {field}'}), 400
+                return jsonify({'error': tr('api.missing_required_field', field=field)}), 400
 
         # Create new symbol
         new_symbol = Symbol(
@@ -790,7 +854,7 @@ def register_symbol():
 
         # Return data in format matching the table structure
         return jsonify({
-            'message': 'Symbol registered successfully',
+            'message': tr('api.symbol_registered'),
             'symbol': {
                 'id': new_symbol.id,
                 'name': new_symbol.name,
@@ -807,13 +871,13 @@ def register_symbol():
 
 @main_bp.route('/api/symbols/<int:symbol_id>', methods=['DELETE'])
 @api_auth_required
-@token_permission_required('can_manage_symbols', 'This token cannot delete symbols.')
+@token_permission_required('can_manage_symbols', 'api.token_cannot_manage_symbols_delete')
 def delete_symbol(symbol_id):
     user = get_request_user()
     symbol = Symbol.query.get_or_404(symbol_id)
     if symbol.user_id != user.id:
-        return jsonify({'error': 'Forbidden'}), 403
+        return jsonify({'error': tr('api.forbidden')}), 403
 
     db.session.delete(symbol)
     db.session.commit()
-    return jsonify({'message': 'Symbol deleted successfully'})
+    return jsonify({'message': tr('api.symbol_deleted')})

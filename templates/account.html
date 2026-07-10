@@ -1,61 +1,97 @@
 {% extends "base.html" %}
 
-{% block title %}Account Settings{% endblock %}
+{% block title %}{{ t('account.title') }}{% endblock %}
 
 {% block content %}
 <div class="section-stack">
     <section class="hero-panel">
         <div class="eyebrow">
             <i class="fas fa-user-gear"></i>
-            Account
+            {{ t('account.eyebrow') }}
         </div>
-        <h1 class="page-title">Account settings</h1>
-        <p class="page-subtitle">Update your email address, rotate your password, and control whether SecureStamp sends timestamp completion notifications.</p>
+        <h1 class="page-title">{{ t('account.hero_title') }}</h1>
+        <p class="page-subtitle">{{ t('account.hero_body') }}</p>
     </section>
 
     <section class="card">
         <div class="card-header">
-            <h2 class="section-title">Profile and security</h2>
+            <h2 class="section-title">{{ t('account.language_title') }}</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('main.set_language_route') }}">
+                <input type="hidden" name="next" value="{{ url_for('main.account_settings') }}">
+                <div class="row g-4 align-items-end">
+                    <div class="col-lg-8">
+                        <label for="language" class="form-label">{{ t('account.language_section') }}</label>
+                        <select id="language" name="language" class="form-select">
+                            {% for code, label in available_languages.items() %}
+                            <option value="{{ code }}" {% if code == current_language %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">{{ t('account.language_help') }}</div>
+                    </div>
+                    <div class="col-lg-4">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-language"></i> {{ t('account.language_save') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="card-header">
+            <h2 class="section-title">{{ t('account.section_title') }}</h2>
         </div>
         <div class="card-body">
             <form method="POST">
                 <div class="row g-4">
                     <div class="col-lg-6">
-                        <label for="email" class="form-label">Email address</label>
+                        <label for="email" class="form-label">{{ t('account.email_address') }}</label>
                         <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
                     </div>
-                    <div class="col-lg-6 d-flex align-items-end">
+                    <div class="col-lg-6">
+                        <label for="email_notification_language" class="form-label">{{ t('account.email_language') }}</label>
+                        <select id="email_notification_language" name="email_notification_language" class="form-select">
+                            {% for code, label in available_languages.items() %}
+                            <option value="{{ code }}" {% if code == (current_user.email_notification_language or 'en') %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">{{ t('account.email_language_help') }}</div>
+                    </div>
+                    <div class="col-12">
                         <div class="form-check form-switch mb-2">
                             <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications" {% if current_user.email_notifications %}checked{% endif %}>
-                            <label class="form-check-label" for="email_notifications">Email notifications enabled</label>
-                            <div class="form-text">Enabled by default for timestamp completion updates.</div>
+                            <label class="form-check-label" for="email_notifications">{{ t('account.notifications') }}</label>
+                            <div class="form-text">{{ t('account.notifications_help') }}</div>
                         </div>
                     </div>
                     <div class="col-12">
                         <hr>
                     </div>
                     <div class="col-lg-4">
-                        <label for="current_password" class="form-label">Current password</label>
+                        <label for="current_password" class="form-label">{{ t('account.current_password') }}</label>
                         <input type="password" class="form-control" id="current_password" name="current_password">
-                        <div class="form-text">Required when changing your email or password.</div>
+                        <div class="form-text">{{ t('account.current_password_help') }}</div>
                     </div>
                     <div class="col-lg-4">
-                        <label for="new_password" class="form-label">New password</label>
+                        <label for="new_password" class="form-label">{{ t('account.new_password') }}</label>
                         <input type="password" class="form-control" id="new_password" name="new_password">
                     </div>
                     <div class="col-lg-4">
-                        <label for="confirm_password" class="form-label">Confirm new password</label>
+                        <label for="confirm_password" class="form-label">{{ t('account.confirm_password') }}</label>
                         <input type="password" class="form-control" id="confirm_password" name="confirm_password">
-                        <div class="form-text">Leave password fields empty to keep your current password.</div>
+                        <div class="form-text">{{ t('account.password_help') }}</div>
                     </div>
                 </div>
 
                 <div class="mt-4 d-flex flex-wrap gap-3">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Changes
+                        <i class="fas fa-save"></i> {{ t('account.save_changes') }}
                     </button>
                     <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        <i class="fas fa-arrow-left"></i> {{ t('common.back_to_dashboard') }}
                     </a>
                 </div>
             </form>

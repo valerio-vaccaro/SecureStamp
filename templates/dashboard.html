@@ -1,45 +1,45 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}{{ t('dashboard.title') }}{% endblock %}
 
 {% block content %}
 <div class="section-stack">
     <section class="hero-panel">
         <div class="eyebrow">
             <i class="fas fa-shield-check"></i>
-            Secure Workspace
+            {{ t('dashboard.eyebrow') }}
         </div>
         <div class="toolbar">
             <div>
-                <h1 class="page-title">Document control for {{ current_user.username }}</h1>
-                <p class="page-subtitle">Monitor uploaded assets, track evidence downloads, and manage timestamp packages from a single operational dashboard.</p>
+                <h1 class="page-title">{{ t('dashboard.hero_title', username=current_user.username) }}</h1>
+                <p class="page-subtitle">{{ t('dashboard.hero_body') }}</p>
             </div>
             <div>
                 <a href="{{ url_for('main.upload') }}" class="btn btn-primary">
-                    <i class="fas fa-upload"></i> Upload Files
+                    <i class="fas fa-upload"></i> {{ t('dashboard.upload_files') }}
                 </a>
             </div>
         </div>
         <div class="metric-grid">
             <div class="metric-card metric-card-compact">
-                <div class="metric-label">Filtered Files</div>
+                <div class="metric-label">{{ t('dashboard.filtered_files') }}</div>
                 <div class="metric-value">{{ total_filtered_count }}</div>
-                <div class="metric-note">{% if has_active_filters %}Matching records{% else %}Vault records{% endif %}</div>
+                <div class="metric-note">{% if has_active_filters %}{{ t('dashboard.matching_records') }}{% else %}{{ t('dashboard.vault_records') }}{% endif %}</div>
             </div>
             <div class="metric-card metric-card-compact">
-                <div class="metric-label">File Downloads</div>
+                <div class="metric-label">{{ t('dashboard.file_downloads') }}</div>
                 <div class="metric-value">{{ filtered_file_downloads }}</div>
-                <div class="metric-note">{% if has_active_filters %}Across filtered files{% else %}Original files{% endif %}</div>
+                <div class="metric-note">{% if has_active_filters %}{{ t('dashboard.across_filtered_files') }}{% else %}{{ t('dashboard.original_files') }}{% endif %}</div>
             </div>
             <div class="metric-card metric-card-compact">
-                <div class="metric-label">Timestamp Downloads</div>
+                <div class="metric-label">{{ t('dashboard.timestamp_downloads') }}</div>
                 <div class="metric-value">{{ filtered_timestamp_downloads }}</div>
-                <div class="metric-note">{% if has_active_filters %}Across filtered files{% else %}Proof packages{% endif %}</div>
+                <div class="metric-note">{% if has_active_filters %}{{ t('dashboard.across_filtered_files') }}{% else %}{{ t('dashboard.proof_packages') }}{% endif %}</div>
             </div>
             <div class="metric-card metric-card-compact">
-                <div class="metric-label">Signature Downloads</div>
+                <div class="metric-label">{{ t('dashboard.signature_downloads') }}</div>
                 <div class="metric-value">{{ filtered_signature_downloads }}</div>
-                <div class="metric-note">{% if has_active_filters %}Across filtered files{% else %}Signature exports{% endif %}</div>
+                <div class="metric-note">{% if has_active_filters %}{{ t('dashboard.across_filtered_files') }}{% else %}{{ t('dashboard.signature_exports') }}{% endif %}</div>
             </div>
         </div>
     </section>
@@ -50,12 +50,12 @@
                 <div>
                     <div class="eyebrow">
                         <i class="fas fa-folder-open"></i>
-                        Repository
+                        {{ t('dashboard.repository') }}
                     </div>
-                    <h2 class="section-title">Your files</h2>
+                    <h2 class="section-title">{{ t('dashboard.your_files') }}</h2>
                 </div>
                 <a href="{{ url_for('main.upload') }}" class="btn btn-outline-primary">
-                    <i class="fas fa-plus"></i> Add New File
+                    <i class="fas fa-plus"></i> {{ t('dashboard.add_new_file') }}
                 </a>
             </div>
         </div>
@@ -63,38 +63,38 @@
             <form method="get" action="{{ url_for('main.dashboard') }}" class="dashboard-filter-form">
                 <div class="dashboard-filter-grid">
                     <div>
-                        <label for="filename" class="form-label">Filename contains</label>
-                        <input type="text" class="form-control" id="filename" name="filename" value="{{ filters.filename }}" placeholder="contract, invoice, report">
+                        <label for="filename" class="form-label">{{ t('dashboard.filename_contains') }}</label>
+                        <input type="text" class="form-control" id="filename" name="filename" value="{{ filters.filename }}" placeholder="{{ t('dashboard.filename_placeholder') }}">
                     </div>
                     <div>
-                        <label for="status" class="form-label">Status</label>
+                        <label for="status" class="form-label">{{ t('common.status') }}</label>
                         <select class="form-select" id="status" name="status">
-                            <option value="">All statuses</option>
+                            <option value="">{{ t('dashboard.all_statuses') }}</option>
                             {% for status_option in status_options %}
-                            <option value="{{ status_option }}" {% if filters.status == status_option %}selected{% endif %}>{{ status_option }}</option>
+                            <option value="{{ status_option }}" {% if filters.status == status_option %}selected{% endif %}>{{ translate_status(status_option) }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div>
-                        <label for="date_from" class="form-label">Uploaded from</label>
+                        <label for="date_from" class="form-label">{{ t('dashboard.uploaded_from') }}</label>
                         <input type="date" class="form-control" id="date_from" name="date_from" value="{{ filters.date_from }}">
                     </div>
                     <div>
-                        <label for="date_to" class="form-label">Uploaded to</label>
+                        <label for="date_to" class="form-label">{{ t('dashboard.uploaded_to') }}</label>
                         <input type="date" class="form-control" id="date_to" name="date_to" value="{{ filters.date_to }}">
                     </div>
                 </div>
                 <div class="dashboard-filter-actions">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-filter"></i> Apply Filters
+                        <i class="fas fa-filter"></i> {{ t('dashboard.apply_filters') }}
                     </button>
                     <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">
-                        <i class="fas fa-rotate-left"></i> Reset
+                        <i class="fas fa-rotate-left"></i> {{ t('dashboard.reset') }}
                     </a>
                     {% if has_active_filters %}
-                    <span class="dashboard-filter-summary">Showing {{ total_filtered_count }} of {{ total_files_count }} files.</span>
+                    <span class="dashboard-filter-summary">{{ t('dashboard.showing_filtered', filtered=total_filtered_count, total=total_files_count) }}</span>
                     {% else %}
-                    <span class="dashboard-filter-summary">Showing page {{ current_page }} of {{ total_pages }}.</span>
+                    <span class="dashboard-filter-summary">{{ t('dashboard.showing_page', current=current_page, total=total_pages) }}</span>
                     {% endif %}
                 </div>
             </form>
@@ -103,10 +103,10 @@
                     <table class="table table-hover dashboard-table">
                         <thead>
                             <tr>
-                                <th>Filename</th>
-                                <th>Status</th>
-                                <th>Downloads</th>
-                                <th class="text-center">Actions</th>
+                                <th>{{ t('common.filename') }}</th>
+                                <th>{{ t('common.status') }}</th>
+                                <th>{{ t('dashboard.downloads') }}</th>
+                                <th class="text-center">{{ t('common.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -120,7 +120,7 @@
                                         <div class="dashboard-file-content">
                                             <div class="dashboard-file-name">{{ file.original_filename }}</div>
                                             <div class="dashboard-file-meta">
-                                                <span>UUID {{ file.storage_key[:8] }}</span>
+                                                <span>{{ t('dashboard.uuid_short') }} {{ file.storage_key[:8] }}</span>
                                                 <span>{{ file.uploaded_at.strftime('%Y-%m-%d %H:%M') }}</span>
                                                 <code>{{ file.storage_key[:8] }}</code>
                                             </div>
@@ -129,7 +129,7 @@
                                 </td>
                                 <td>
                                     <span class="badge bg-{{ file.get_status_badge() }}">
-                                        {{ file.status }}
+                                        {{ translate_status(file.status) }}
                                     </span>
                                 </td>
                                 <td>
@@ -141,16 +141,16 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-compact justify-content-center">
-                                        <a href="{{ url_for('main.download_file', file_ref=file.storage_key) }}" class="btn btn-sm btn-success" title="Download file" aria-label="Download file">
+                                        <a href="{{ url_for('main.download_file', file_ref=file.storage_key) }}" class="btn btn-sm btn-success" title="{{ t('dashboard.download_file') }}" aria-label="{{ t('dashboard.download_file') }}">
                                             <i class="fas fa-download"></i>
                                         </a>
-                                        <a href="{{ url_for('main.download_timestamp', file_ref=file.storage_key) }}" class="btn btn-sm btn-warning" title="Download timestamp" aria-label="Download timestamp">
+                                        <a href="{{ url_for('main.download_timestamp', file_ref=file.storage_key) }}" class="btn btn-sm btn-warning" title="{{ t('dashboard.download_timestamp') }}" aria-label="{{ t('dashboard.download_timestamp') }}">
                                             <i class="fas fa-clock"></i>
                                         </a>
-                                        <a href="{{ url_for('main.download_signature', file_ref=file.storage_key) }}" class="btn btn-sm btn-primary" title="Download signature" aria-label="Download signature">
+                                        <a href="{{ url_for('main.download_signature', file_ref=file.storage_key) }}" class="btn btn-sm btn-primary" title="{{ t('dashboard.download_signature') }}" aria-label="{{ t('dashboard.download_signature') }}">
                                             <i class="fas fa-signature"></i>
                                         </a>
-                                        <a href="{{ url_for('main.file_detail', file_ref=file.storage_key) }}" class="btn btn-sm btn-info" title="View details" aria-label="View details">
+                                        <a href="{{ url_for('main.file_detail', file_ref=file.storage_key) }}" class="btn btn-sm btn-info" title="{{ t('dashboard.view_details') }}" aria-label="{{ t('dashboard.view_details') }}">
                                             <i class="fas fa-circle-info"></i>
                                         </a>
                                     </div>
@@ -162,11 +162,11 @@
                 </div>
                 {% if total_pages > 1 %}
                 <div class="dashboard-pagination">
-                    <div class="dashboard-filter-summary">Page {{ current_page }} of {{ total_pages }}. Showing up to {{ per_page }} files per page.</div>
+                    <div class="dashboard-filter-summary">{{ t('dashboard.pagination', current=current_page, total=total_pages, per_page=per_page) }}</div>
                     <div class="btn-group">
                         {% if prev_page_url %}
                         <a href="{{ prev_page_url }}" class="btn btn-secondary">
-                            <i class="fas fa-chevron-left"></i> Previous
+                            <i class="fas fa-chevron-left"></i> {{ t('dashboard.previous') }}
                         </a>
                         {% endif %}
                         {% for page_number in page_numbers %}
@@ -176,7 +176,7 @@
                         {% endfor %}
                         {% if next_page_url %}
                         <a href="{{ next_page_url }}" class="btn btn-secondary">
-                            Next <i class="fas fa-chevron-right"></i>
+                            {{ t('dashboard.next') }} <i class="fas fa-chevron-right"></i>
                         </a>
                         {% endif %}
                     </div>
@@ -186,16 +186,16 @@
                 <div class="empty-state">
                     <i class="fas fa-file-upload fa-2x"></i>
                     {% if has_active_filters %}
-                    <h3 class="section-title mb-2">No files match these filters</h3>
-                    <p class="page-subtitle mx-auto">Try widening the date range, clearing the status filter, or searching with a broader filename fragment.</p>
+                    <h3 class="section-title mb-2">{{ t('dashboard.no_files_filtered') }}</h3>
+                    <p class="page-subtitle mx-auto">{{ t('dashboard.no_files_filtered_body') }}</p>
                     <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary mt-2">
-                        <i class="fas fa-rotate-left"></i> Clear Filters
+                        <i class="fas fa-rotate-left"></i> {{ t('dashboard.clear_filters') }}
                     </a>
                     {% else %}
-                    <h3 class="section-title mb-2">No files uploaded yet</h3>
-                    <p class="page-subtitle mx-auto">Start by uploading your first document package. SecureStamp will keep its file, timestamp, and signature assets together.</p>
+                    <h3 class="section-title mb-2">{{ t('dashboard.no_files') }}</h3>
+                    <p class="page-subtitle mx-auto">{{ t('dashboard.no_files_body') }}</p>
                     <a href="{{ url_for('main.upload') }}" class="btn btn-primary mt-2">
-                        <i class="fas fa-upload"></i> Upload Your First File
+                        <i class="fas fa-upload"></i> {{ t('dashboard.first_upload') }}
                     </a>
                     {% endif %}
                 </div>

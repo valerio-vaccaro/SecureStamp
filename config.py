@@ -5,14 +5,25 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_app_version():
-    """Version from the latest git tag, falling back to the commit hash."""
+    """Version from the latest git tag, suffixing -dev when ahead of the tag."""
     try:
         result = subprocess.run(
-            ['git', 'describe', '--tags', '--always'],
+            ['git', 'describe', '--tags', '--always', '--long'],
             cwd=os.path.dirname(os.path.abspath(__file__)),
             capture_output=True, text=True, timeout=5
         )
-        return result.stdout.strip() or 'unknown'
+        description = result.stdout.strip()
+        if not description:
+            return 'unknown'
+
+        parts = description.rsplit('-', 2)
+        if len(parts) == 3 and parts[1].isdigit() and parts[2].startswith('g'):
+            base_version, commits_since_tag, _git_hash = parts
+            if int(commits_since_tag) > 0:
+                return f'{base_version}-dev'
+            return base_version
+
+        return description
     except Exception:
         return 'unknown'
 

@@ -37,6 +37,7 @@ FLASK_ENV=development
 DATABASE_URL=mysql://username:password@localhost/securestamp
 SECRET_KEY=your-secret-key
 UPLOAD_FOLDER=uploads
+PUBLIC_BASE_URL=https://securestamp.it
 GPG_USER=gpg-user
 ONION_URL=your-onion-address.onion
 MAIL_SERVER=smtp.example.com

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}API Documentation{% endblock %}
+{% block title %}{{ t('swagger.title') }}{% endblock %}
 
 {% block extra_head %}
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
@@ -11,10 +11,10 @@
     <section class="hero-panel">
         <div class="eyebrow">
             <i class="fas fa-book-open"></i>
-            Reference
+            {{ t('swagger.eyebrow') }}
         </div>
-        <h1 class="page-title">API documentation</h1>
-        <p class="page-subtitle">Browse the OpenAPI definition inside the same SecureStamp interface, with a clean white documentation surface for endpoint exploration.</p>
+        <h1 class="page-title">{{ t('swagger.hero_title') }}</h1>
+        <p class="page-subtitle">{{ t('swagger.hero_body') }}</p>
     </section>
 
     <div class="api-docs-shell">
