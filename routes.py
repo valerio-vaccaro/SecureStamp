@@ -1,7 +1,7 @@
 import os
 import secrets
 from functools import wraps
-from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, send_file, abort, jsonify, g, session
+from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, send_file, abort, jsonify, g, session, Response
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.utils import secure_filename
 from models import User, File, Symbol, ApiToken
@@ -17,6 +17,14 @@ from i18n import LANGUAGES, normalize_language, set_language, translate
 
 auth_bp = Blueprint('auth', __name__)
 main_bp = Blueprint('main', __name__)
+
+PUBLIC_INDEXABLE_ENDPOINTS = {
+    'auth.login',
+    'auth.register',
+    'main.api_docs',
+    'main.robots_txt',
+    'main.sitemap_xml',
+}
 
 TOKEN_PERMISSION_PRESETS = {
     'full_access': {
@@ -61,6 +69,33 @@ def get_valid_language_or_default(raw_language, default='en'):
     return normalize_language((raw_language or '').strip(), default=default)
 
 
+def normalize_base_url(raw_url):
+    if not raw_url:
+        return None
+
+    raw_url = raw_url.strip()
+    if not raw_url:
+        return None
+    if not raw_url.startswith(('http://', 'https://')):
+        raw_url = f'https://{raw_url}'
+    return raw_url.rstrip('/')
+
+
+def get_public_base_url():
+    configured = normalize_base_url(current_app.config.get('PUBLIC_BASE_URL'))
+    if configured:
+        return configured
+    return request.url_root.rstrip('/')
+
+
+def build_canonical_url(path=None):
+    base_url = get_public_base_url()
+    path = path or request.path
+    if not path.startswith('/'):
+        path = f'/{path}'
+    return f'{base_url}{path}'
+
+
 def build_file_payload(file):
     return {
         'file_uuid': file.storage_key,
@@ -89,6 +124,26 @@ def build_public_service_stats():
             )
         ).scalar(),
     }
+
+
+def build_public_urls():
+    return [
+        {
+            'loc': build_canonical_url(url_for('auth.login')),
+            'changefreq': 'weekly',
+            'priority': '1.0',
+        },
+        {
+            'loc': build_canonical_url(url_for('auth.register')),
+            'changefreq': 'monthly',
+            'priority': '0.8',
+        },
+        {
+            'loc': build_canonical_url(url_for('main.api_docs')),
+            'changefreq': 'weekly',
+            'priority': '0.7',
+        },
+    ]
 
 
 def get_file_by_reference(file_ref):
@@ -224,6 +279,56 @@ def set_language_route():
         next_url = url_for('auth.login')
     return redirect(next_url)
 
+
+@main_bp.after_app_request
+def apply_search_headers(response):
+    endpoint = request.endpoint or ''
+    if endpoint in PUBLIC_INDEXABLE_ENDPOINTS:
+        response.headers['X-Robots-Tag'] = 'index, follow'
+    else:
+        response.headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive'
+    return response
+
+
+@main_bp.route('/robots.txt')
+def robots_txt():
+    lines = [
+        'User-agent: *',
+        'Allow: /login',
+        'Allow: /register',
+        'Allow: /api/docs',
+        'Disallow: /',
+        'Disallow: /dashboard',
+        'Disallow: /upload',
+        'Disallow: /account',
+        'Disallow: /tokens',
+        'Disallow: /files',
+        'Disallow: /download',
+        'Disallow: /api/',
+        'Disallow: /symbols-dashboard',
+        f'Sitemap: {build_canonical_url("/sitemap.xml")}',
+    ]
+    return Response('\n'.join(lines) + '\n', mimetype='text/plain')
+
+
+@main_bp.route('/sitemap.xml')
+def sitemap_xml():
+    urls = build_public_urls()
+    xml_lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for entry in urls:
+        xml_lines.extend([
+            '  <url>',
+            f"    <loc>{entry['loc']}</loc>",
+            f"    <changefreq>{entry['changefreq']}</changefreq>",
+            f"    <priority>{entry['priority']}</priority>",
+            '  </url>',
+        ])
+    xml_lines.append('</urlset>')
+    return Response('\n'.join(xml_lines) + '\n', mimetype='application/xml')
+
 # Authentication routes
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -249,7 +354,13 @@ def register():
 
         return redirect(url_for('auth.login'))
 
-    return render_template('register.html')
+    return render_template(
+        'register.html',
+        meta_title='SecureStamp Registration | Secure File Timestamping Access',
+        meta_description='Request access to SecureStamp to manage signed files, Bitcoin timestamp proofs, and controlled verification workflows.',
+        meta_robots='index, follow',
+        canonical_url=build_canonical_url(url_for('auth.register')),
+    )
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -267,7 +378,14 @@ def login():
             return redirect(url_for('main.dashboard'))
         
         flash(tr('flash.invalid_credentials'), 'error')
-    return render_template('login.html', service_stats=build_public_service_stats())
+    return render_template(
+        'login.html',
+        service_stats=build_public_service_stats(),
+        meta_title='SecureStamp | Secure File Timestamping and Evidence Management',
+        meta_description='SecureStamp helps teams timestamp files, manage signed evidence packages, and verify document integrity with Bitcoin-based proofs.',
+        meta_robots='index, follow',
+        canonical_url=build_canonical_url(url_for('auth.login')),
+    )
 
 @auth_bp.route('/logout')
 @login_required
@@ -816,7 +934,13 @@ def download_signature(file_ref):
 @main_bp.route('/api/docs')
 def api_docs():
     """Swagger UI page documenting all API endpoints"""
-    return render_template('swagger.html')
+    return render_template(
+        'swagger.html',
+        meta_title='SecureStamp API Documentation',
+        meta_description='Explore the SecureStamp API for file uploads, timestamp retrieval, signed artifacts, and token-based automation workflows.',
+        meta_robots='index, follow',
+        canonical_url=build_canonical_url(url_for('main.api_docs')),
+    )
 
 @main_bp.route('/symbols-dashboard')
 @login_required
