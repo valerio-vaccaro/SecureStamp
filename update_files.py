@@ -660,6 +660,23 @@ def update_files():
             if file.status == 'Timestamp completed':
                 send_pending_notifications(app, file, user, mail_enabled)
 
+        repaired_confirmed_at = 0
+        for file, _user in files:
+            if file.status != 'Timestamp completed' or file.confirmed_at is not None:
+                continue
+
+            confirmed_at = get_proof_confirmation_time(file.file_path)
+            if confirmed_at is None:
+                continue
+
+            file.confirmed_at = confirmed_at
+            repaired_confirmed_at += 1
+            print(f"Backfilled confirmed_at from proof for file {file.file_path}")
+
+        if repaired_confirmed_at:
+            db.session.commit()
+            print(f"Backfilled confirmed_at for {repaired_confirmed_at} completed file(s)")
+
 def send_email(recipients, subject, html_body, attachments=None):
     app = create_app()
     with app.app_context():
