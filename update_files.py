@@ -477,6 +477,57 @@ def smtp_configured(app):
     required_keys = ['MAIL_SERVER', 'MAIL_PORT', 'MAIL_DEFAULT_SENDER']
     return all(app.config.get(key) for key in required_keys)
 
+
+def send_pending_notifications(app, file, user, mail_enabled):
+    primary_recipient = get_primary_notification_recipient(user)
+    secondary_recipient = get_secondary_notification_recipient(file, user)
+
+    if not mail_enabled:
+        recipients = [recipient for recipient in [primary_recipient, secondary_recipient] if recipient]
+        if recipients:
+            print(f"Email notification skipped for {', '.join(recipients)}: SMTP is not configured")
+        else:
+            print(f"Email notification skipped for file {file.storage_key}: no recipients configured")
+        return
+
+    if primary_recipient and not file.primary_notification_sent_at:
+        try:
+            subject = email_text(
+                user.email_notification_language,
+                'subject',
+                filename=file.original_filename,
+            )
+            html_body = build_timestamp_completion_email(file, user)
+            send_email([primary_recipient], subject, html_body)
+            file.primary_notification_sent_at = datetime.utcnow()
+            db.session.commit()
+            print(f"Primary notification email sent to {primary_recipient}")
+        except Exception as exc:
+            db.session.rollback()
+            print(f"Primary notification email failed for {primary_recipient}: {exc}")
+
+    if secondary_recipient and not file.secondary_notification_sent_at:
+        try:
+            subject = email_text(
+                file.notification_email_language,
+                'subject',
+                filename=file.original_filename,
+            )
+            html_body = build_attachment_confirmation_email(file, user)
+            attachments = build_existing_attachments(file)
+            send_email(
+                [secondary_recipient],
+                subject,
+                html_body,
+                attachments=attachments,
+            )
+            file.secondary_notification_sent_at = datetime.utcnow()
+            db.session.commit()
+            print(f"Secondary notification email sent to {secondary_recipient}")
+        except Exception as exc:
+            db.session.rollback()
+            print(f"Secondary notification email failed for {secondary_recipient}: {exc}")
+
 def list_files():
     # Create app context
     app = create_app()
@@ -551,43 +602,11 @@ def update_files():
                         print(f"Timestamp completed for file {file.file_path}!!!")
                         file.status = 'Timestamp completed'
                         db.session.commit()
-
-                        primary_recipient = get_primary_notification_recipient(user)
-                        secondary_recipient = get_secondary_notification_recipient(file, user)
-
-                        if mail_enabled:
-                            if primary_recipient:
-                                subject = email_text(
-                                    user.email_notification_language,
-                                    'subject',
-                                    filename=file.original_filename,
-                                )
-                                html_body = build_timestamp_completion_email(file, user)
-                                send_email([primary_recipient], subject, html_body)
-                                print(f"Primary notification email sent to {primary_recipient}")
-
-                            if secondary_recipient:
-                                subject = email_text(
-                                    file.notification_email_language,
-                                    'subject',
-                                    filename=file.original_filename,
-                                )
-                                html_body = build_attachment_confirmation_email(file, user)
-                                attachments = build_existing_attachments(file)
-                                send_email(
-                                    [secondary_recipient],
-                                    subject,
-                                    html_body,
-                                    attachments=attachments,
-                                )
-                                print(f"Secondary notification email sent to {secondary_recipient}")
-                        elif primary_recipient or secondary_recipient:
-                            recipients = [recipient for recipient in [primary_recipient, secondary_recipient] if recipient]
-                            print(f"Email notification skipped for {', '.join(recipients)}: SMTP is not configured")
-                        else:
-                            print(f"Email notification skipped for file {file.storage_key}: no recipients configured")
                 else:
                     print(result.stdout.decode('utf-8'))
+
+            if file.status == 'Timestamp completed':
+                send_pending_notifications(app, file, user, mail_enabled)
 
 def send_email(recipients, subject, html_body, attachments=None):
     app = create_app()
