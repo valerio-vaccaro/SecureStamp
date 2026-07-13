@@ -39,6 +39,7 @@ class File(db.Model):
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
     file_path = db.Column(db.String(255), nullable=False)
     status = db.Column(db.String(50), default='Timestamp requested', nullable=False)
+    confirmed_at = db.Column(db.DateTime, nullable=True)
     primary_notification_sent_at = db.Column(db.DateTime, nullable=True)
     secondary_notification_sent_at = db.Column(db.DateTime, nullable=True)
     

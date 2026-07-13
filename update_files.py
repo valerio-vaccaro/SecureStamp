@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 import os
+import re
 import subprocess
 import hashlib
 import mimetypes
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from flask import render_template
 from flask_mail import Message
@@ -411,8 +412,58 @@ def format_elapsed_time(start_time, end_time):
     return " ".join(parts)
 
 
+OTS_TIMEZONE_OFFSETS = {
+    'UTC': 0,
+    'GMT': 0,
+    'CET': 1,
+    'CEST': 2,
+}
+
+
+def get_proof_confirmation_time(file_path):
+    proof_path = f'{file_path}.ots'
+    if not os.path.exists(file_path) or not os.path.exists(proof_path):
+        return None
+
+    try:
+        result = subprocess.run(
+            ['ots-cli.js', 'verify', '--ignore-bitcoin-node', '-f', file_path, proof_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=15,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+    if result.returncode != 0:
+        return None
+
+    match = re.search(r'Success!\s+Bitcoin attests data existed as of\s+(.+)', result.stdout)
+    if not match:
+        return None
+
+    raw_value = match.group(1).strip()
+    raw_parts = raw_value.rsplit(' ', 1)
+    if len(raw_parts) != 2:
+        return None
+
+    timestamp_part, timezone_name = raw_parts
+    timezone_offset = OTS_TIMEZONE_OFFSETS.get(timezone_name.upper())
+    if timezone_offset is None:
+        return None
+
+    try:
+        naive_timestamp = datetime.strptime(timestamp_part, '%a %b %d %H:%M:%S %Y')
+    except ValueError:
+        return None
+
+    aware_timestamp = naive_timestamp.replace(tzinfo=timezone(timedelta(hours=timezone_offset)))
+    return aware_timestamp.astimezone(timezone.utc).replace(tzinfo=None)
+
+
 def build_timestamp_completion_email(file, user):
-    confirmed_at = datetime.utcnow()
+    confirmed_at = file.confirmed_at or datetime.utcnow()
     base_url = get_public_base_url()
     language = get_email_language(user.email_notification_language)
     return render_template(
@@ -434,7 +485,7 @@ def build_timestamp_completion_email(file, user):
 
 
 def build_attachment_confirmation_email(file, user):
-    confirmed_at = datetime.utcnow()
+    confirmed_at = file.confirmed_at or datetime.utcnow()
     language = get_email_language(file.notification_email_language)
     return render_template(
         'emails/timestamp_completed_attachment.html',
@@ -601,6 +652,7 @@ def update_files():
                     if res.find("Success! Timestamp complete") != -1:
                         print(f"Timestamp completed for file {file.file_path}!!!")
                         file.status = 'Timestamp completed'
+                        file.confirmed_at = get_proof_confirmation_time(file.file_path) or datetime.utcnow()
                         db.session.commit()
                 else:
                     print(result.stdout.decode('utf-8'))

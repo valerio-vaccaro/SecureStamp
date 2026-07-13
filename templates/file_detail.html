@@ -44,6 +44,12 @@
                                 <span class="badge bg-{{ file.get_status_badge() }}">{{ translate_status(file.status) }}</span>
                             </div>
                         </div>
+                        {% if confirmed_at %}
+                        <div class="detail-item">
+                            <div class="detail-label">{{ t('file_detail.confirmed_at') }}</div>
+                            <div class="detail-value"><i class="fas fa-clock me-2"></i>{{ confirmed_at }}</div>
+                        </div>
+                        {% endif %}
                         <div class="detail-item">
                             <div class="detail-label">{{ t('file_detail.file_uuid') }}</div>
                             <div class="detail-value"><i class="fas fa-hashtag me-2"></i><code class="user-select-all">{{ file.storage_key }}</code></div>

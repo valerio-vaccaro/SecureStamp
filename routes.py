@@ -1,5 +1,6 @@
 import os
 import secrets
+import re
 from functools import wraps
 from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app, send_file, abort, jsonify, g, session, Response
 from flask_login import login_user, logout_user, login_required, current_user
@@ -94,6 +95,29 @@ def build_canonical_url(path=None):
     if not path.startswith('/'):
         path = f'/{path}'
     return f'{base_url}{path}'
+
+
+def get_proof_confirmation_time(file_path):
+    proof_path = f'{file_path}.ots'
+    if not os.path.exists(file_path) or not os.path.exists(proof_path):
+        return None
+
+    try:
+        result = subprocess.run(
+            ['ots-cli.js', 'verify', '--ignore-bitcoin-node', '-f', file_path, proof_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=15,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+    if result.returncode != 0:
+        return None
+
+    match = re.search(r'Success!\s+Bitcoin attests data existed as of\s+(.+)', result.stdout)
+    return match.group(1).strip() if match else None
 
 
 def build_file_payload(file):
@@ -828,8 +852,15 @@ def file_detail(file_ref):
             file_hash = hashlib.sha256(file_content).hexdigest()
     except Exception:
         file_hash = None
+
+    confirmed_at = None
+    if file.status == 'Timestamp completed':
+        if file.confirmed_at is not None:
+            confirmed_at = file.confirmed_at.strftime('%Y-%m-%d %H:%M:%S UTC')
+        else:
+            confirmed_at = get_proof_confirmation_time(file.file_path)
     
-    return render_template('file_detail.html', file=file, file_hash=file_hash)
+    return render_template('file_detail.html', file=file, file_hash=file_hash, confirmed_at=confirmed_at)
 
 
 @main_bp.route('/api/files', methods=['GET'])
