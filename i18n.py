@@ -1,4 +1,4 @@
-from flask import g, request, session
+from flask import g, has_request_context, request, session
 
 
 DEFAULT_LANGUAGE = "en"
@@ -737,7 +737,9 @@ def init_i18n(app):
 
     @app.context_processor
     def inject_i18n_helpers():
-        endpoint = request.endpoint or "main.dashboard"
+        endpoint = "main.dashboard"
+        if has_request_context():
+            endpoint = request.endpoint or endpoint
         return {
             "t": translate,
             "translate_status": translate_status,
