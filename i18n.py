@@ -738,13 +738,14 @@ def init_i18n(app):
     @app.context_processor
     def inject_i18n_helpers():
         endpoint = "main.dashboard"
+        current_language = getattr(g, "language", DEFAULT_LANGUAGE)
         if has_request_context():
             endpoint = request.endpoint or endpoint
         return {
             "t": translate,
             "translate_status": translate_status,
             "available_languages": LANGUAGES,
-            "current_language": g.language,
+            "current_language": current_language,
             "default_language": DEFAULT_LANGUAGE,
             "current_endpoint": endpoint,
         }
