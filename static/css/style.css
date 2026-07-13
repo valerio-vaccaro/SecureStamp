@@ -514,6 +514,74 @@ textarea.form-control {
     font-weight: 600;
 }
 
+.dashboard-chart-card {
+    margin-bottom: 1.25rem;
+    padding: 1.2rem;
+    border: 1px solid var(--border-soft);
+    border-radius: 1.25rem;
+    background:
+        linear-gradient(180deg, rgba(28, 108, 243, 0.05) 0%, rgba(255, 255, 255, 0.98) 100%);
+}
+
+.dashboard-chart-header {
+    margin-bottom: 1rem;
+}
+
+.dashboard-chart-note {
+    margin: 0.35rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+}
+
+.dashboard-chart {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
+    gap: 0.75rem;
+    align-items: end;
+    min-height: 240px;
+}
+
+.dashboard-chart-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
+.dashboard-chart-value {
+    color: var(--text-soft);
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.dashboard-chart-bar-wrap {
+    display: flex;
+    align-items: end;
+    justify-content: center;
+    width: 100%;
+    height: 160px;
+    padding: 0 0.2rem;
+}
+
+.dashboard-chart-bar {
+    width: 100%;
+    max-width: 42px;
+    min-height: 8px;
+    border-radius: 0.9rem 0.9rem 0.4rem 0.4rem;
+    background: linear-gradient(180deg, #60a5fa 0%, #1c6cf3 100%);
+    box-shadow: 0 12px 24px rgba(28, 108, 243, 0.18);
+}
+
+.dashboard-chart-label {
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.2;
+    word-break: break-word;
+}
+
 .dashboard-table > :not(caption) > * > * {
     padding-top: 0.8rem;
     padding-bottom: 0.8rem;
@@ -609,6 +677,10 @@ textarea.form-control {
 }
 
 @media (max-width: 991.98px) {
+    .dashboard-chart {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
     .dashboard-table thead {
         display: none;
     }
@@ -631,6 +703,16 @@ textarea.form-control {
 
     .dashboard-table td:last-child {
         padding-top: 0;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .dashboard-chart {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .dashboard-chart-card {
+        padding: 1rem;
     }
 }
 

@@ -451,6 +451,64 @@ def dashboard():
         flash(tr('dashboard.invalid_filter_message', filters=', '.join(invalid_filters)), 'error')
 
     total_filtered_count = query.count()
+    chart_points = []
+
+    uploaded_timestamps = [
+        row[0]
+        for row in query.with_entities(File.uploaded_at)
+        .order_by(File.uploaded_at.asc())
+        .all()
+        if row[0]
+    ]
+
+    if uploaded_timestamps:
+        first_timestamp = uploaded_timestamps[0]
+        last_timestamp = uploaded_timestamps[-1]
+
+        if first_timestamp == last_timestamp:
+            chart_points = [
+                {
+                    'label': first_timestamp.strftime('%Y-%m-%d'),
+                    'range_label': first_timestamp.strftime('%Y-%m-%d %H:%M'),
+                    'count': len(uploaded_timestamps),
+                    'height': 100,
+                }
+            ]
+        else:
+            span_seconds = max(1, int((last_timestamp - first_timestamp).total_seconds()))
+            bucket_count = min(12, max(2, len(uploaded_timestamps)))
+            bucket_size_seconds = max(1, math.ceil(span_seconds / bucket_count))
+            bucket_counts = [0] * bucket_count
+
+            for uploaded_at in uploaded_timestamps:
+                offset_seconds = int((uploaded_at - first_timestamp).total_seconds())
+                bucket_index = min(bucket_count - 1, offset_seconds // bucket_size_seconds)
+                bucket_counts[bucket_index] += 1
+
+            max_bucket_count = max(bucket_counts) or 1
+
+            def format_bucket_label(timestamp):
+                if span_seconds <= 86400:
+                    return timestamp.strftime('%H:%M')
+                if span_seconds <= 86400 * 60:
+                    return timestamp.strftime('%d %b')
+                return timestamp.strftime('%b %Y')
+
+            for index, count in enumerate(bucket_counts):
+                bucket_start = first_timestamp + timedelta(seconds=bucket_size_seconds * index)
+                bucket_end = first_timestamp + timedelta(seconds=bucket_size_seconds * (index + 1))
+                chart_points.append(
+                    {
+                        'label': format_bucket_label(bucket_start),
+                        'range_label': (
+                            f"{bucket_start.strftime('%Y-%m-%d %H:%M')} - "
+                            f"{bucket_end.strftime('%Y-%m-%d %H:%M')}"
+                        ),
+                        'count': count,
+                        'height': max(10, round((count / max_bucket_count) * 100)) if count else 8,
+                    }
+                )
+
     total_pages = max(1, math.ceil(total_filtered_count / per_page)) if total_filtered_count else 1
     page = min(page, total_pages)
 
@@ -497,6 +555,7 @@ def dashboard():
         filtered_file_downloads=aggregate_row[0],
         filtered_timestamp_downloads=aggregate_row[1],
         filtered_signature_downloads=aggregate_row[2],
+        chart_points=chart_points,
     )
 
 def allowed_file(filename):

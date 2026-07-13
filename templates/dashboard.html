@@ -99,6 +99,31 @@
                 </div>
             </form>
             {% if files %}
+                {% if chart_points %}
+                <section class="dashboard-chart-card" aria-labelledby="timestamp-distribution-title">
+                    <div class="dashboard-chart-header">
+                        <div>
+                            <div class="eyebrow">
+                                <i class="fas fa-chart-column"></i>
+                                {{ t('dashboard.timestamp_distribution_eyebrow') }}
+                            </div>
+                            <h3 id="timestamp-distribution-title" class="section-title">{{ t('dashboard.timestamp_distribution_title') }}</h3>
+                            <p class="dashboard-chart-note">{{ t('dashboard.timestamp_distribution_body') }}</p>
+                        </div>
+                    </div>
+                    <div class="dashboard-chart" role="img" aria-label="{{ t('dashboard.timestamp_distribution_aria') }}">
+                        {% for point in chart_points %}
+                        <div class="dashboard-chart-column" title="{{ point.range_label }}: {{ point.count }}">
+                            <div class="dashboard-chart-value">{{ point.count }}</div>
+                            <div class="dashboard-chart-bar-wrap">
+                                <div class="dashboard-chart-bar" style="height: {{ point.height }}%;"></div>
+                            </div>
+                            <div class="dashboard-chart-label">{{ point.label }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
                 <div class="table-responsive dashboard-table-wrap">
                     <table class="table table-hover dashboard-table">
                         <thead>
